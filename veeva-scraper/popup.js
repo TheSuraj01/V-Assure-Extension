@@ -311,10 +311,9 @@ document.getElementById('genBackBtn').addEventListener('click', () => {
 });
 
 async function checkBackendHealth() {
-  const backendUrl = document.getElementById('backendUrl').value.trim() || DEFAULT_BACKEND;
   const healthEl = document.getElementById('healthStatus');
   try {
-    const res = await fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(`${DEFAULT_BACKEND}/health`, { signal: AbortSignal.timeout(3000) });
     if (res.ok) {
       const data = await res.json();
       healthEl.innerHTML = `<span style="color:var(--green)">● Backend online</span> · ${data.kb_entries_total} KB entries loaded`;
@@ -322,16 +321,13 @@ async function checkBackendHealth() {
       healthEl.innerHTML = `<span style="color:var(--red)">● Backend error (${res.status})</span>`;
     }
   } catch {
-    healthEl.innerHTML = `<span style="color:var(--amber)">● Backend offline — check http://localhost:8000</span>`;
+    healthEl.innerHTML = `<span style="color:var(--amber)">● Backend offline — check ${DEFAULT_BACKEND}</span>`;
   }
 }
 
 document.getElementById('runGenBtn').addEventListener('click', async () => {
-  const backendUrl = (document.getElementById('backendUrl').value.trim() || DEFAULT_BACKEND).replace(/\/$/, '');
   const selectedModelVal = document.getElementById('modelSelect').value;
   const [provider, model] = selectedModelVal.split('|');
-  const apiKey = document.getElementById('apiKey').value.trim();
-  const apiBase = document.getElementById('apiBase').value.trim();
   const useStream = document.getElementById('useStream').checked;
   const useRag = document.getElementById('useRag').checked;
   const sessionName = document.getElementById('sessionName').value.trim();
@@ -357,16 +353,14 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
     provider,
     temperature: 0.15,
     use_rag: useRag,
-    session_name: sessionName || undefined,
-    ...(apiKey ? { api_key: apiKey } : {}),
-    ...(apiBase ? { api_base: apiBase } : {}),
+    session_name: sessionName || undefined
   };
 
   try {
     if (useStream) {
       outputEl.innerHTML = `<span style="color:var(--muted2)">Streaming ${kb.length} steps</span>\n\n`;
 
-      const res = await fetch(`${backendUrl}/generate/stream`, {
+      const res = await fetch(`${DEFAULT_BACKEND}/generate/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -421,7 +415,7 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
     } else {
       outputEl.innerHTML = `<span style="color:var(--muted2)">Processing ${kb.length} steps via backend</span><span class="loading-dots"></span>`;
 
-      const res = await fetch(`${backendUrl}/generate`, {
+      const res = await fetch(`${DEFAULT_BACKEND}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -445,17 +439,15 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
   } catch (err) {
     console.error('Generation error (popup)', err);
     const details = err && (err.stack || err.message) ? `\n\n${err.stack || err.message}` : '';
-    outputEl.textContent = `❌ Error: ${err.message || 'network error'}${details}\n\nMake sure the backend is running:\n  cd veeva-backend && uvicorn main:app --reload`;
+    outputEl.textContent = `❌ Error: ${err.message || 'network error'}${details}\n\nMake sure the backend is running at ${DEFAULT_BACKEND}`;
   } finally {
     runBtn.disabled = false;
   }
 });
 
 document.getElementById('downloadOutputBtn').addEventListener('click', async () => {
-  const backendUrl = (document.getElementById('backendUrl').value.trim() || DEFAULT_BACKEND).replace(/\/$/, '');
-
   if (generatedSessionId) {
-    window.open(`${backendUrl}/download/${generatedSessionId}`, '_blank');
+    window.open(`${DEFAULT_BACKEND}/download/${generatedSessionId}`, '_blank');
   } else {
     const text = document.getElementById('genOutput').textContent;
     const a = document.createElement('a');
@@ -469,10 +461,7 @@ document.getElementById('copyOutputBtn').addEventListener('click', () => {
   copyText(document.getElementById('genOutput').textContent);
 });
 
-document.getElementById('backendUrl').addEventListener('change', () => {
-  chrome.storage.local.set({ backendUrl: document.getElementById('backendUrl').value });
-  checkBackendHealth();
-});
+// Copy Helpers
 
 function copyText(text) {
   navigator.clipboard.writeText(text).then(() => showToast());
@@ -490,52 +479,14 @@ function escHtml(str) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// ─── Init & Config ────────────────────────────────────────────────────────
-
-function updateProviderUI() {
-  const selectedModelVal = document.getElementById('modelSelect').value;
-  const [provider, model] = selectedModelVal.split('|');
-  const apiKeyGroup = document.getElementById('apiKeyGroup');
-  const apiKeyLabel = document.getElementById('apiKeyLabel');
-  const apiBaseGroup = document.getElementById('apiBaseGroup');
-
-  if (provider === 'groq') {
-    apiKeyGroup.style.display = 'block';
-    apiKeyLabel.innerHTML = 'Groq API Key <span style="color:var(--muted2);font-weight:400">(optional)</span>';
-    apiBaseGroup.style.display = 'none';
-  } else if (provider === 'bedrock') {
-    apiKeyGroup.style.display = 'block';
-    apiKeyLabel.innerHTML = 'AWS Credentials <span style="color:var(--muted2);font-weight:400">(Key:Secret:Region)</span>';
-    apiBaseGroup.style.display = 'none';
-  } else if (provider === 'local') {
-    apiKeyGroup.style.display = 'block';
-    apiKeyLabel.innerHTML = 'API Key <span style="color:var(--muted2);font-weight:400">(optional)</span>';
-    apiBaseGroup.style.display = 'block';
-  }
-}
-
 document.getElementById('modelSelect').addEventListener('change', () => {
-  updateProviderUI();
   chrome.storage.local.set({ genModel: document.getElementById('modelSelect').value });
 });
 
-chrome.storage.local.get(['genApiKey', 'genModel', 'backendUrl', 'genApiBase'], (r) => {
+chrome.storage.local.get(['genModel'], (r) => {
   if (r.genModel && Array.from(document.getElementById('modelSelect').options).some(o => o.value === r.genModel)) {
     document.getElementById('modelSelect').value = r.genModel;
   }
-  updateProviderUI();
-
-  if (r.genApiKey) document.getElementById('apiKey').value = r.genApiKey;
-  if (r.backendUrl) document.getElementById('backendUrl').value = r.backendUrl;
-  if (r.genApiBase) document.getElementById('apiBase').value = r.genApiBase;
-});
-
-document.getElementById('apiKey').addEventListener('change', (e) => {
-  chrome.storage.local.set({ genApiKey: e.target.value });
-});
-
-document.getElementById('apiBase').addEventListener('change', (e) => {
-  chrome.storage.local.set({ genApiBase: e.target.value });
 });
 
 syncState();

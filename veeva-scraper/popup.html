@@ -766,13 +766,11 @@
     </div>
 
     <div class="groq-config">
-      <!-- Row 1: Backend URL + health -->
+      <!-- Backend Health Status (URL handled by backend) -->
       <div class="field-group">
-        <div class="field-label">Backend URL</div>
-        <input class="input" type="text" id="backendUrl" placeholder="http://localhost:8000" />
         <div id="healthStatus"
           style="font-size:10px;color:var(--muted2);margin-top:4px;font-family:'IBM Plex Mono',monospace;">
-          ● Checking...
+          ● Checking backend...
         </div>
       </div>
 
@@ -795,18 +793,7 @@
         </div>
       </div>
 
-      <!-- Row 2b: API Key & API Base -->
-      <div style="display:flex;gap:10px;" id="authRow">
-        <div class="field-group" style="flex:1.2;" id="apiKeyGroup">
-          <div class="field-label" id="apiKeyLabel">API Key <span
-              style="color:var(--muted2);font-weight:400">(optional)</span></div>
-          <input class="input" type="password" id="apiKey" placeholder="..." />
-        </div>
-        <div class="field-group" style="flex:1; display:none;" id="apiBaseGroup">
-          <div class="field-label">API Base URL</div>
-          <input class="input" type="text" id="apiBase" placeholder="http://..." />
-        </div>
-      </div>
+      <!-- API configuration handled by backend -->
 
       <!-- Row 3: session name + toggles -->
       <div style="display:flex;gap:10px;align-items:flex-end;">
