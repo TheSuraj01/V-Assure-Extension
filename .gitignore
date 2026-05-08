@@ -1,0 +1,5 @@
+veeva-backend\__pycache__
+venv
+veeva-backend\.env
+*.env
+veeva-backend\outputs

@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Veeva Step Recorder</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Outfit:wght@400;600;800&display=swap');
+
+    :root {
+      --bg: #080d14;
+      --s1: #0d1522;
+      --s2: #111e2e;
+      --border: #1e2d3e;
+      --border2: #253545;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --amber: #f59e0b;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --text: #e2e8f0;
+      --muted: #4a6278;
+      --muted2: #6b8094;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 500px;
+      min-height: 240px;
+      max-height: 620px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 12px 16px;
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #080d14;
+    }
+
+    .logo-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .logo-name em {
+      font-style: normal;
+      color: var(--cyan);
+    }
+
+    .rec-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      margin-left: auto;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    .rec-dot.active {
+      background: var(--red);
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.25);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.25);
+      }
+
+      50% {
+        box-shadow: 0 0 0 6px rgba(248, 113, 113, 0.08);
+      }
+    }
+
+    /* ── Controls ── */
+    .controls {
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--s2);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 7px 0;
+      border-radius: 7px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn:hover {
+      background: var(--s1);
+    }
+
+    .btn.start {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .btn.start:hover {
+      background: rgba(74, 222, 128, 0.08);
+    }
+
+    .btn.start:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn.stop {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .btn.stop:hover {
+      background: rgba(248, 113, 113, 0.08);
+    }
+
+    .btn.stop:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn.restart {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .btn.restart:hover {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .btn.generate {
+      background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+      border-color: transparent;
+      color: #080d14;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .btn.generate:hover {
+      opacity: 0.88;
+    }
+
+    .btn.generate:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* ── Status bar ── */
+    .statusbar {
+      padding: 6px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--muted2);
+    }
+
+    .status-badge {
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--s2);
+      border: 1px solid var(--border2);
+    }
+
+    .status-badge.recording {
+      background: rgba(248, 113, 113, 0.1);
+      border-color: rgba(248, 113, 113, 0.3);
+      color: var(--red);
+    }
+
+    .status-badge.stopped {
+      background: rgba(74, 222, 128, 0.08);
+      border-color: rgba(74, 222, 128, 0.2);
+      color: var(--green);
+    }
+
+    .status-badge.idle {
+      color: var(--muted2);
+    }
+
+    .step-count {
+      margin-left: auto;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    /* ── Filter chips ── */
+    .filters {
+      display: flex;
+      gap: 6px;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--s1);
+    }
+
+    .chip {
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--muted2);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+
+    .chip.active {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      background: rgba(34, 211, 238, 0.08);
+    }
+
+    /* ── Step list ── */
+    .list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+    }
+
+    .list::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .list::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 3px;
+    }
+
+    .empty {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty .icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .empty p {
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .empty strong {
+      color: var(--cyan);
+    }
+
+    .step-row {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .step-row:hover {
+      background: var(--s1);
+    }
+
+    .step-row:last-child {
+      border-bottom: none;
+    }
+
+    .step-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      min-width: 22px;
+      padding-top: 2px;
+    }
+
+    .step-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .step-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 3px;
+    }
+
+    .action-pill {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .action-pill.click {
+      background: rgba(34, 211, 238, 0.12);
+      color: var(--cyan);
+      border: 1px solid rgba(34, 211, 238, 0.25);
+    }
+
+    .action-pill.enter {
+      background: rgba(74, 222, 128, 0.12);
+      color: var(--green);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+    }
+
+    .action-pill.select {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--amber);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .action-pill.screenshot {
+      background: rgba(192, 132, 252, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(192, 132, 252, 0.25);
+    }
+
+    .action-pill.step_marker {
+      background: rgba(244, 114, 182, 0.12);
+      color: #f472b6;
+      border: 1px solid rgba(244, 114, 182, 0.25);
+    }
+
+    .type-tag {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--muted2);
+      background: var(--s2);
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .step-time {
+      margin-left: auto;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+    }
+
+    .step-label {
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .step-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--amber);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .step-sub {
+      font-size: 10px;
+      color: var(--muted2);
+      margin-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 8px 16px;
+      background: var(--s2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .footer-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--muted2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.12s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .footer-btn:hover {
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    /* ── Detail Panel ── */
+    .panel {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      flex-direction: column;
+      z-index: 20;
+    }
+
+    .panel.open {
+      display: flex;
+    }
+
+    .panel-header {
+      padding: 11px 16px;
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-title {
+      font-weight: 700;
+      font-size: 13px;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+    }
+
+    .panel-body::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .panel-body::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 3px;
+    }
+
+    .json-block {
+      background: var(--s1);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--muted2);
+      margin-bottom: 10px;
+    }
+
+    .block-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted2);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 5px;
+    }
+
+    .jk {
+      color: #60a5fa;
+    }
+
+    .js {
+      color: #4ade80;
+    }
+
+    .jn {
+      color: #f59e0b;
+    }
+
+    .jb {
+      color: #c084fc;
+    }
+
+    .panel-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--s2);
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ── Generate overlay ── */
+    .overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      flex-direction: column;
+      z-index: 30;
+    }
+
+    .overlay.open {
+      display: flex;
+    }
+
+    .overlay-header {
+      padding: 12px 16px;
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .groq-config {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-group {
+      margin-bottom: 10px;
+    }
+
+    .field-label {
+      font-size: 10px;
+      color: var(--muted2);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 7px 10px;
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input:focus {
+      border-color: var(--cyan);
+    }
+
+    .input::placeholder {
+      color: var(--muted);
+    }
+
+    .output-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+    }
+
+    .output-area::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .output-area::-webkit-scrollbar-thumb {
+      background: var(--border2);
+    }
+
+    .output-block {
+      background: var(--s1);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--green);
+      min-height: 80px;
+    }
+
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.4s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+
+      0%,
+      100% {
+        content: '';
+      }
+
+      25% {
+        content: '.';
+      }
+
+      50% {
+        content: '..';
+      }
+
+      75% {
+        content: '...';
+      }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 60px;
+      right: 14px;
+      background: var(--green);
+      color: var(--bg);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-mark">V</div>
+      <div class="logo-name">Veeva <em>Recorder</em></div>
+    </div>
+    <div class="rec-dot" id="recDot"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn start" id="startBtn">▶ Start</button>
+    <button class="btn stop" id="stopBtn" disabled>■ Stop</button>
+    <button class="btn restart" id="restartBtn">↺ Restart</button>
+    <button class="btn generate" id="generateBtn" disabled>⚡ Generate Prompts</button>
+  </div>
+
+  <!-- Status -->
+  <div class="statusbar">
+    <span class="status-badge idle" id="statusBadge">IDLE</span>
+    <span id="statusText">Start recording to capture interactions</span>
+    <span class="step-count" id="stepCount">0 steps</span>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <button class="chip active" data-f="all">All</button>
+    <button class="chip" data-f="click">Click</button>
+    <button class="chip" data-f="enter">Enter</button>
+    <button class="chip" data-f="select">Select</button>
+  </div>
+
+  <!-- List -->
+  <div class="list" id="list">
+    <div class="empty">
+      <div class="icon">⬤</div>
+      <p>Press <strong>Start</strong> then interact<br>with any element on Veeva Vault.<br>Steps are captured
+        automatically.</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button class="footer-btn" id="exportRawBtn">⬇ Raw JSON</button>
+    <button class="footer-btn" id="exportKbBtn">⬇ KB JSON</button>
+    <button class="footer-btn" id="clearBtn" style="margin-left:auto;color:var(--red);">✕ Clear</button>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="panel" id="detailPanel">
+    <div class="panel-header">
+      <button class="btn" id="backBtn" style="flex:0;padding:5px 10px;font-size:11px;">← Back</button>
+      <div class="panel-title" id="panelTitle"></div>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+    <div class="panel-footer">
+      <button class="footer-btn" id="copyRawEntry">Copy Raw</button>
+      <button class="footer-btn" id="copyKbEntry">Copy KB Entry</button>
+    </div>
+  </div>
+
+  <!-- Generate Overlay -->
+  <div class="overlay" id="genOverlay">
+    <div class="overlay-header">
+      <button class="btn" id="genBackBtn" style="flex:0;padding:5px 10px;font-size:11px;">← Back</button>
+      <div class="logo-name" style="flex:1;">⚡ <em>Generate Prompts</em></div>
+      <button class="footer-btn" id="copyOutputBtn">Copy</button>
+    </div>
+
+    <div class="groq-config">
+      <!-- Row 1: Backend URL + health -->
+      <div class="field-group">
+        <div class="field-label">Backend URL</div>
+        <input class="input" type="text" id="backendUrl" placeholder="http://localhost:8000" />
+        <div id="healthStatus"
+          style="font-size:10px;color:var(--muted2);margin-top:4px;font-family:'IBM Plex Mono',monospace;">
+          ● Checking...
+        </div>
+      </div>
+
+      <!-- Row 2: Model Selection -->
+      <div style="display:flex;gap:10px;">
+        <div class="field-group" style="flex:1;">
+          <div class="field-label">Model</div>
+          <select class="input" id="modelSelect" style="cursor:pointer;">
+            <optgroup label="Groq">
+              <option value="groq|llama-3.3-70b-versatile">LLAMA Versatile</option>
+              <option value="groq|llama-3.1-8b-instant">LLAMA Instant</option>
+            </optgroup>
+            <optgroup label="AWS Bedrock">
+              <option value="bedrock|anthropic.claude-3-5-sonnet-20240620-v1:0">Claude 3.5 Sonnet</option>
+            </optgroup>
+            <optgroup label="Local (BHDC)">
+              <option value="local|llama-3.3-70b-versatile">LLaMA Versatile (Local BHDS)</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 2b: API Key & API Base -->
+      <div style="display:flex;gap:10px;" id="authRow">
+        <div class="field-group" style="flex:1.2;" id="apiKeyGroup">
+          <div class="field-label" id="apiKeyLabel">API Key <span
+              style="color:var(--muted2);font-weight:400">(optional)</span></div>
+          <input class="input" type="password" id="apiKey" placeholder="..." />
+        </div>
+        <div class="field-group" style="flex:1; display:none;" id="apiBaseGroup">
+          <div class="field-label">API Base URL</div>
+          <input class="input" type="text" id="apiBase" placeholder="http://..." />
+        </div>
+      </div>
+
+      <!-- Row 3: session name + toggles -->
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <div class="field-group" style="flex:1;">
+          <div class="field-label">Session Name (optional)</div>
+          <input class="input" type="text" id="sessionName" placeholder="e.g. clinical_user_create" />
+        </div>
+        <div style="display:flex;gap:12px;padding-bottom:2px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:var(--muted2);">
+            <input type="checkbox" id="useStream" checked style="accent-color:var(--cyan);" />
+            Stream
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:var(--muted2);">
+            <input type="checkbox" id="useRag" checked style="accent-color:var(--cyan);" />
+            RAG
+          </label>
+        </div>
+      </div>
+
+      <button class="btn generate" id="runGenBtn" style="flex:0;width:100%;margin-top:6px;">
+        ⚡ Run Generation
+      </button>
+    </div>
+
+    <div class="output-area">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="block-label">Generated Test Steps</div>
+        <button class="footer-btn" id="downloadOutputBtn"
+          style="display:none;color:var(--cyan);border-color:var(--cyan);">
+          ⬇ Download
+        </button>
+      </div>
+      <div class="output-block" id="genOutput">Output will appear here after generation...</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

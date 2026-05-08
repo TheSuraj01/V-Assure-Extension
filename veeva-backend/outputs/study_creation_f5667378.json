@@ -1,0 +1,66 @@
+{
+  "session_id": "study_creation_f5667378",
+  "total_steps": 3,
+  "steps": [
+    {
+      "step": 1,
+      "name": "click save",
+      "original_output": "Click Save",
+      "enhanced_output": "Click Save Button.",
+      "action": "click",
+      "label": "Save Button",
+      "value": null,
+      "userStep": null,
+      "rag_context_used": [
+        "Click the Save button.",
+        "Click Save to save the record.",
+        "Click Save in the dialog box.",
+        "Click on the Save button in the Create Domain User dialog box.",
+        "Click the Continue button."
+      ],
+      "confidence": 1.0,
+      "validation_reason": "Label matched"
+    },
+    {
+      "step": 2,
+      "name": "enter title",
+      "original_output": "Enter title",
+      "enhanced_output": "Enter 'Study Automation' in the Title Input Field.",
+      "action": "enter",
+      "label": "Title",
+      "value": "Study Automation",
+      "userStep": null,
+      "rag_context_used": [
+        "Enter 'Study Name' in the Study Number input field.",
+        "Select <<study>> from Study dropdown.",
+        "Fetch the study value stored in memory and select it in the Study Dropdown Input Field.",
+        "Enter '<<email>>' in the Email field.",
+        "Enter '<<text>>' in the Search Bar."
+      ],
+      "confidence": 1.0,
+      "validation_reason": "Label matched | Value matched"
+    },
+    {
+      "step": 3,
+      "name": "select organization",
+      "original_output": "Select organization",
+      "enhanced_output": "Select 'Clinical' from the Organization Dropdown field.",
+      "action": "select",
+      "label": "Organization",
+      "value": null,
+      "userStep": null,
+      "rag_context_used": [
+        "Select '<<vault_name>>' from the vault dropdown list.",
+        "Select '<<quality_vault_name>>' from the Vault dropdown.",
+        "Select a value from the Applicant dropdown.",
+        "Select <<vault>> from the Vault dropdown.",
+        "Select Logout from the dropdown."
+      ],
+      "confidence": 1.0,
+      "validation_reason": "Label matched"
+    }
+  ],
+  "full_script": "1. Click Save Button.\n2. Enter 'Study Automation' in the Title Input Field.\n3. Select 'Clinical' from the Organization Dropdown field.",
+  "download_url": "/download/study_creation_f5667378",
+  "model_used": "llama-3.3-70b-versatile"
+}

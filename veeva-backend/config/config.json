@@ -1,0 +1,305 @@
+{
+    "app": {
+        "name": "Veeva Vault Step Generator",
+        "version": "3.0.0",
+        "debug": true,
+        "environment": "development"
+    },
+    "model": {
+        "name": "groq/llama-3.3-70b-versatile",
+        "temperature": 0.12,
+        "max_tokens": 180,
+        "timeout": 120,
+        "streaming_enabled": true
+    },
+    "generation": {
+        "use_multi_candidate": false,
+        "num_candidates": 1,
+        "temperature_variance": 0.05,
+        "max_temperature": 0.4,
+        "max_retries": 10,
+        "retry_backoff_base": 2,
+        "default_wait_time": 2,
+        "enable_template_generation": true,
+        "enable_validation": true,
+        "enable_candidate_scoring": true,
+        "fallback_to_original": true,
+        "max_parallel_generations": 5,
+        "max_session_cache": 100
+    },
+    "rag": {
+        "enabled": true,
+        "top_k": 5,
+        "diversity_weight": 0.3,
+        "bm25_k1": 1.5,
+        "bm25_b": 0.75,
+        "similarity_threshold": 0.7,
+        "enable_workflow_boost": true,
+        "enable_label_similarity": true,
+        "enable_value_similarity": true,
+        "candidate_pool_multiplier": 3
+    },
+    "validation": {
+        "enabled": true,
+        "min_confidence_threshold": 0.55,
+        "template_confidence_threshold": 0.80,
+        "min_output_length": 5,
+        "min_word_count": 2,
+        "max_word_count": 40,
+        "max_sentences": 2,
+        "require_period": false,
+        "require_action_verb": true,
+        "strict_forbidden_word_check": true,
+        "allow_partial_label_match": true
+    },
+    "context": {
+        "previous_steps_count": 5,
+        "max_rag_examples": 5,
+        "enable_context_summary": true,
+        "enable_previous_steps_context": true
+    },
+    "actions": {
+        "click": [
+            "Click",
+            "Click on",
+            "Press",
+            "Tap"
+        ],
+        "enter": [
+            "Enter",
+            "Type",
+            "Input",
+            "Fill in"
+        ],
+        "select": [
+            "Select",
+            "Choose",
+            "Pick"
+        ],
+        "verify": [
+            "Verify",
+            "Check",
+            "Confirm",
+            "Ensure",
+            "Validate"
+        ],
+        "navigate": [
+            "Navigate to",
+            "Go to",
+            "Open",
+            "Navigate Back",
+            "Reload"
+        ],
+        "memory": [
+            "Fetch",
+            "Store"
+        ],
+        "generate": [
+            "Generate",
+            "Create"
+        ],
+        "upload": [
+            "Upload"
+        ],
+        "capture": [
+            "Capture"
+        ]
+    },
+    "templates": {
+        "memory_store": "Store the fetched value in the memory with the key '{key}'.",
+        "memory_fetch": "Fetch the '{key}' value from the memory.",
+        "input_with_memory": "Enter the fetched value in the {field_name} Input Field.",
+        "admin_nav": "Navigate to Admin > {section}.",
+        "tab_collection": "Click on {label} from the tab collection.",
+        "menu_select": "Click the {menu} menu and select {option}.",
+        "input_with_value": "Enter <<{value}>> in {label} Input Field.",
+        "input_and_action": "Enter <<{value}>> in {label} Input Field and {action}.",
+        "dropdown_select": "Select <<{option}>> from the {label} dropdown list.",
+        "dropdown_simple": "Select {option} from the dropdown.",
+        "button_click": "Click {label} button.",
+        "button_click_with_context": "Click {label} button {context}.",
+        "link_click": "Click {label}.",
+        "verify_state": "Verify {condition}.",
+        "verify_user": "Verify the <<{user}>> user {condition}.",
+        "clear_field": "Clear {field_name} {field_type} field.",
+        "keyboard_action": "Click {key_name} Key.",
+        "generate_dynamic_value": "Generate a {length} digit {string_type} username with suffix '{suffix}'.",
+        "generate_large_string": "Create a random {length} characters string.",
+        "enter_generated_value": "Enter the generated {value_type} in the {field_name} {field_type} Field.",
+        "generate_date": "Generate {offset} {timezone} date in {format} format.",
+        "enter_generated_date": "Enter the generated date in the {field_name} {field_type} Field.",
+        "reload_page": "Reload Page",
+        "navigate_back": "Navigate Back",
+        "create_object_record": "Create a Object record using Veeva Vault API using value <<{json_object}>>.",
+        "create_document_record": "Create a Document record using Veeva Vault API using value <<{json_object}>>.",
+        "store_record_value": "Store the {record_value} value in the memory with the key '{key_name}'.",
+        "open_new_tab": "Open New Tab",
+        "switch_tab": "Switch to Tab {tab_no}.",
+        "open_local_pdf": "Open the local <<{variable_name}>> in VAssure PDF Reader application.",
+        "download_source_file": "Click on the Source File Button to download the file.",
+        "store_downloaded_file": "Store the downloaded file path in the memory with the key '{key_name}'.",
+        "open_downloaded_pdf": "Open the fetched '{key_name}' in the VAssure PDF Reader application url <<{reader_url}>>.",
+        "view_document_info": "View {document_info_type} by view document information in the VAssure PDF Reader.",
+        "close_document_info": "Close the document information in the VAssure PDF Reader.",
+        "navigate_pdf_page": "Navigate to page {page_no} in the PDF document.",
+        "navigate_last_page": "Navigate to the last page in the PDF document.",
+        "navigate_previous_page": "Navigate to the previous page in the PDF document.",
+        "change_pdf_view": "Change the page view to {view_type} in the VAssure PDF Reader.",
+        "find_pdf_text": "Find '{search_string}' text in the VAssure PDF Reader.",
+        "close_search_box": "Close the search box in VAssure PDF Reader application.",
+        "display_pdf_hierarchy": "Display PDF hierarchy in VAssure PDF Reader."
+    },
+    "prompting": {
+        "forbidden_words": [
+            "span",
+            "div",
+            "path",
+            "svg",
+            "rect",
+            "li ",
+            " li",
+            "undefined",
+            "null",
+            "element type",
+            "node",
+            "dom",
+            "html",
+            "class",
+            "id="
+        ]
+    },
+    "prompt": {
+        "system_instruction": "You are an enterprise-grade Veeva Vault automation test step generation engine. Your responsibility is to generate highly structured, reusable, human-readable, enterprise-standard automation steps following the exact formatting and workflow conventions provided.",
+        "critical_rules": [
+            "OUTPUT FORMAT:",
+            "- Generate professional enterprise QA automation steps",
+            "- Generate ONLY actionable automation instructions",
+            "- Never generate explanations",
+            "- Never generate markdown",
+            "- Never generate bullets",
+            "- Preserve business terminology exactly",
+            "- Preserve capitalization of labels and sections",
+            "- Use human-readable business-friendly wording",
+            "- Follow Veeva Vault enterprise automation style",
+            "",
+            "- Write EXACTLY ONE sentence",
+            "- NO number prefix (e.g., \"1.\", \"Step 1:\")",
+            "- NO quotation marks around the whole sentence",
+            "- End with a period",
+            "- Start with an action verb (Click, Enter, Select, Navigate, Verify)",
+            "",
+            "FORBIDDEN ELEMENTS:",
+            "- NEVER use HTML terms: span, div, path, svg, li, node, element",
+            "- NEVER use technical jargon: undefined, null, DOM, class, id",
+            "- Use plain English: button, link, tab, input field, dropdown, icon",
+            "",
+            "ACTION-SPECIFIC FORMATS:",
+            "   CLICK actions:",
+            "   - Format: \"Click [the] {label} [button/link/tab/icon].\"",
+            "   ENTER/INPUT actions:",
+            "   - Format: \"Enter <<{value}>> in {label} Input Field.\"",
+            "   - The value MUST be wrapped in << >>",
+            "   SELECT actions (dropdowns):",
+            "   - Format: \"Select <<{option}>> from the {label} dropdown list.\"",
+            "   NAVIGATE actions:",
+            "   - Format: \"Navigate to {path}.\" or \"Click on {tab} from {context}.\"",
+            "   - Use > for navigation paths",
+            "",
+            "LABEL USAGE:",
+            "- Use the label exactly as provided, preserve capitalization",
+            "- For icons: keep \"Icon\" in the name (\"User Profile Icon\")",
+            "- For buttons: add \"button\" if not already present",
+            "- Keep labels natural and readable",
+            "",
+            "VALUE HANDLING:",
+            "- For text input: ALWAYS include the exact value in << >>",
+            "- For dropdowns: wrap selected option in << >>",
+            "- Never omit values - they are essential test data",
+            "",
+            "STRICT RULES:",
+            "- Never use HTML or DOM terminology",
+            "- Never expose technical selectors",
+            "- Never generate XPath/CSS selectors",
+            "- Never mention backend implementation",
+            "- Never generate unnecessary text",
+            "- Never hallucinate field names",
+            "- Never change provided values",
+            "- Never remove memory references",
+            "- Never omit generated values",
+            "",
+            "MEMORY RULES:",
+            "- Use 'Store the fetched value in the memory with the key'",
+            "- Use 'Fetch the <key> value from the memory'",
+            "- Keep memory key names exactly as provided",
+            "",
+            "FIELD RULES:",
+            "- Use Input Field, Dropdown field, TextArea Field exactly as provided",
+            "- Preserve exact UI labels",
+            "- Use quotes around static values",
+            "- Use << >> around variable placeholders",
+            "",
+            "PDF READER RULES:",
+            "- Use exact VAssure PDF Reader terminology",
+            "- Preserve exact PDF navigation wording",
+            "",
+            "API RULES:",
+            "- Preserve exact API creation terminology",
+            "- Preserve exact JSON object variable references"
+        ],
+        "step_patterns": {
+            "memory_store": [
+                "Store the fetched value in the memory with the key '{key}'."
+            ],
+            "memory_fetch": [
+                "Fetch the '{key}' value from the memory."
+            ],
+            "input_field": [
+                "Enter '{value}' in the {field_name} Input Field."
+            ],
+            "textarea_field": [
+                "Enter '{value}' in the {field_name} TextArea Field."
+            ],
+            "dropdown_select": [
+                "Select '{value}' from the {field_name} Dropdown field."
+            ],
+            "verification": [
+                "Verify that the {element_name} is displayed."
+            ],
+            "keyboard": [
+                "Click Enter Key.",
+                "Click Esc Key."
+            ],
+            "screenshot": [
+                "Capture Full Page Screenshot.",
+                "Capture Page Screenshot."
+            ]
+        },
+        "label_usage_rules": [
+            "Use labels exactly as provided",
+            "Preserve section names exactly",
+            "Preserve capitalization exactly",
+            "Keep enterprise wording consistent",
+            "Never shorten labels",
+            "Never remove suffixes like Button, Field, Dropdown"
+        ],
+        "value_handling_rules": [
+            "Use quotes around static values",
+            "Use << >> around variables/placeholders",
+            "Never modify generated variable names",
+            "Never omit dynamic values",
+            "Keep generated values reusable"
+        ],
+        "task_instruction": "Generate enterprise-grade Veeva Vault automation steps following the exact enterprise workflow patterns and formatting rules.",
+        "output_instruction": "Generate only the final automation step."
+    },
+    "logging": {
+        "level": "INFO",
+        "format": "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    },
+    "storage": {
+        "output_directory": "outputs",
+        "data_directory": "data",
+        "save_json_output": true,
+        "save_text_output": true
+    }
+}

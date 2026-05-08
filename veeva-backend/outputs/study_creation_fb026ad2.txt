@@ -1,0 +1,46 @@
+======================================================================
+  VEEVA VAULT TEST AUTOMATION SCRIPT
+======================================================================
+
+Session ID    : study_creation_fb026ad2
+Generated     : 2026-05-06 22:50:11
+Model Used    : llama-3.3-70b-versatile
+Total Steps   : 3
+
+======================================================================
+TEST STEPS
+======================================================================
+
+1. Click Save Button.
+2. Enter 'Study Automation' in the Title Input Field.
+3. Select 'Clinical' from the Organization Dropdown field.
+
+======================================================================
+DETAILED STEP INFORMATION
+======================================================================
+
+Step 1: click save
+  Action       : click
+  Label        : Save Button
+  Original     : Click Save
+  Enhanced     : Click Save Button.
+  RAG Examples : 5 retrieved
+
+Step 2: enter title
+  Action       : enter
+  Label        : Title
+  Value        : Study Automation
+  Original     : Enter title
+  Enhanced     : Enter 'Study Automation' in the Title Input Field.
+  RAG Examples : 5 retrieved
+
+Step 3: select organization
+  Action       : select
+  Label        : Organization
+  Original     : Select organization
+  Enhanced     : Select 'Clinical' from the Organization Dropdown field.
+  RAG Examples : 5 retrieved
+
+======================================================================
+End of test script - study_creation_fb026ad2
+======================================================================

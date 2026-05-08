@@ -1,0 +1,263 @@
+[
+    {
+        "name": "navigate vault url veeva",
+        "input": {
+            "action": "navigate",
+            "label": "Vault URL",
+            "value": "<<vault_url>>"
+        },
+        "output": "Navigate to '<<vault_url>>'."
+    },
+    {
+        "name": "enter username veeva",
+        "input": {
+            "action": "enter",
+            "label": "User Name Input Field",
+            "value": "<<username>>"
+        },
+        "output": "Enter '<<username>>' in the User Name Input Field."
+    },
+    {
+        "name": "enter password veeva",
+        "input": {
+            "action": "enter",
+            "label": "Password Input Field",
+            "value": "<<password>>"
+        },
+        "output": "Enter '<<password>>' in the Password Input Field."
+    },
+    {
+        "name": "click continue button veeva",
+        "input": {
+            "action": "click",
+            "label": "Continue button"
+        },
+        "output": "Click the Continue button."
+    },
+    {
+        "name": "click log in button veeva",
+        "input": {
+            "action": "click",
+            "label": "Log In button"
+        },
+        "output": "Click the Log In button."
+    },
+    {
+        "name": "click select vault button veeva",
+        "input": {
+            "action": "click",
+            "label": "Select a Vault button"
+        },
+        "output": "Click the Select a Vault button."
+    },
+    {
+        "name": "enter search vault veeva",
+        "input": {
+            "action": "enter",
+            "label": "Search Vaults Input Field",
+            "value": "<<vault_name>>"
+        },
+        "output": "Enter '<<vault_name>>' in the Search Vaults Input Field."
+    },
+    {
+        "name": "select vault from dropdown veeva",
+        "input": {
+            "action": "select",
+            "label": "Vault dropdown",
+            "value": "<<vault_name>>"
+        },
+        "output": "Select '<<vault_name>>' from the dropdown list."
+    },
+    {
+        "name": "click tab collection menu veeva",
+        "input": {
+            "action": "click",
+            "label": "Tab Collection menu"
+        },
+        "output": "Click on the Tab Collection menu."
+    },
+    {
+        "name": "click admin menu veeva",
+        "input": {
+            "action": "click",
+            "label": "Admin Menu"
+        },
+        "output": "Click on the Admin Menu."
+    },
+    {
+        "name": "click users groups icon veeva",
+        "input": {
+            "action": "click",
+            "label": "Users & Groups Icon"
+        },
+        "output": "Click on the Users & Groups Icon."
+    },
+    {
+        "name": "enter search bar veeva",
+        "input": {
+            "action": "enter",
+            "label": "Search Bar",
+            "value": "<<text>>"
+        },
+        "output": "Enter '<<text>>' in the Search Bar."
+    },
+    {
+        "name": "click search button veeva",
+        "input": {
+            "action": "click",
+            "label": "Search Button"
+        },
+        "output": "Click on the Search Button."
+    },
+    {
+        "name": "press enter key veeva",
+        "input": {
+            "action": "press",
+            "label": "Enter Key"
+        },
+        "output": "Press the Enter key."
+    },
+    {
+        "name": "capture page screenshot veeva",
+        "input": {
+            "action": "capture",
+            "label": "Page Screenshot"
+        },
+        "output": "Capture a screenshot of the page."
+    },
+    {
+        "name": "click user profile icon veeva",
+        "input": {
+            "action": "click",
+            "label": "User Profile Icon"
+        },
+        "output": "Click on the User Profile Icon."
+    },
+    {
+        "name": "click logout veeva",
+        "input": {
+            "action": "click",
+            "label": "Log Out"
+        },
+        "output": "Click Log Out."
+    },
+    {
+        "name": "click switch user veeva",
+        "input": {
+            "action": "click",
+            "label": "Switch User"
+        },
+        "output": "Click on Switch User."
+    },
+    {
+        "name": "click create button veeva",
+        "input": {
+            "action": "click",
+            "label": "Create button"
+        },
+        "output": "Click the Create button."
+    },
+    {
+        "name": "enter description field veeva",
+        "input": {
+            "action": "enter",
+            "label": "Description Input Field",
+            "value": "<<text>>"
+        },
+        "output": "Enter '<<text>>' in the Description Input Field."
+    },
+    {
+        "name": "enter reason field veeva",
+        "input": {
+            "action": "enter",
+            "label": "Reason Input Field",
+            "value": "<<text>>"
+        },
+        "output": "Enter '<<text>>' in the Reason Input Field."
+    },
+    {
+        "name": "enter implementation period veeva",
+        "input": {
+            "action": "enter",
+            "label": "Implementation Period Input Field",
+            "value": "<<days>>"
+        },
+        "output": "Enter '<<days>>' in the Implementation Period Input Field."
+    },
+    {
+        "name": "click save button veeva",
+        "input": {
+            "action": "click",
+            "label": "Save button"
+        },
+        "output": "Click the Save button."
+    },
+    {
+        "name": "verify page displayed veeva",
+        "input": {
+            "action": "verify",
+            "label": "Page Display"
+        },
+        "output": "Verify that the page is displayed."
+    },
+    {
+        "name": "verify record state veeva",
+        "input": {
+            "action": "verify",
+            "label": "Record State",
+            "value": "<<state>>"
+        },
+        "output": "Verify that the record is in '<<state>>' state."
+    },
+    {
+        "name": "click workflow button veeva",
+        "input": {
+            "action": "click",
+            "label": "Workflow Button"
+        },
+        "output": "Click on the Workflow button."
+    },
+    {
+        "name": "select dropdown option veeva",
+        "input": {
+            "action": "select",
+            "label": "Dropdown Option",
+            "value": "<<option>>"
+        },
+        "output": "Select '<<option>>' from the dropdown list."
+    },
+    {
+        "name": "click start button veeva",
+        "input": {
+            "action": "click",
+            "label": "Start button"
+        },
+        "output": "Click the Start button."
+    },
+    {
+        "name": "reload page veeva",
+        "input": {
+            "action": "refresh",
+            "label": "Page"
+        },
+        "output": "Reload the page."
+    },
+    {
+        "name": "fetch value from memory veeva",
+        "input": {
+            "action": "fetch",
+            "label": "Memory Key",
+            "value": "<<key>>"
+        },
+        "output": "Fetch the value for '<<key>>' from memory."
+    },
+    {
+        "name": "store value in memory veeva",
+        "input": {
+            "action": "store",
+            "label": "Memory Key",
+            "value": "<<value>>"
+        },
+        "output": "Store '<<value>>' in memory."
+    }
+]

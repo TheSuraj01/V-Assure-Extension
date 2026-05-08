@@ -1,0 +1,323 @@
+[
+    {
+        "name": "store quality event record number",
+        "input": {
+            "action": "memory_store",
+            "label": "Quality Event",
+            "value": "QE-000178",
+            "memoryKey": "QE-######"
+        },
+        "output": "Store the value 'QE-000178' in memory with the key 'QE-######'."
+    },
+    {
+        "name": "store investigation record number",
+        "input": {
+            "action": "memory_store",
+            "label": "Investigation",
+            "value": "INV-000014",
+            "memoryKey": "INV-######"
+        },
+        "output": "Store the value 'INV-000014' in memory with the key 'INV-######'."
+    },
+    {
+        "name": "store root cause record number",
+        "input": {
+            "action": "memory_store",
+            "label": "Root Cause",
+            "value": "RC-000036",
+            "memoryKey": "RC-######"
+        },
+        "output": "Store the value 'RC-000036' in memory with the key 'RC-######'."
+    },
+    {
+        "name": "store capa record number",
+        "input": {
+            "action": "memory_store",
+            "label": "CAPA",
+            "value": "CAPA-000008",
+            "memoryKey": "CAPA-#####"
+        },
+        "output": "Store the value 'CAPA-000008' in memory with the key 'CAPA-#####'."
+    },
+    {
+        "name": "store effectiveness check record number",
+        "input": {
+            "action": "memory_store",
+            "label": "Effectiveness Check",
+            "value": "EFF-000008",
+            "memoryKey": "EFF-######"
+        },
+        "output": "Store the value 'EFF-000008' in memory with the key 'EFF-######'."
+    },
+    {
+        "name": "store effectiveness check duration",
+        "input": {
+            "action": "memory_store",
+            "label": "Duration of Effectiveness Check",
+            "value": "2",
+            "memoryKey": "Duration of Eff Check"
+        },
+        "output": "Store the value '2' in memory with the key 'Duration of Eff Check'."
+    },
+    {
+        "name": "navigate qms vault",
+        "input": {
+            "action": "navigate",
+            "label": "Vault URL",
+            "value": "<<vault_url>>"
+        },
+        "output": "Navigate to '<<vault_url>>'."
+    },
+    {
+        "name": "login qms external user",
+        "input": {
+            "action": "login",
+            "username": "<<qmsExternal>>",
+            "password": "<<password>>",
+            "vault": "<<qmsVault>>"
+        },
+        "output": "Login to '<<qmsVault>>' using '<<qmsExternal>>' credentials."
+    },
+    {
+        "name": "open capa actions module",
+        "input": {
+            "action": "navigate_module",
+            "label": "CAPA Actions"
+        },
+        "output": "Navigate to the CAPA Actions module from Quality Actions."
+    },
+    {
+        "name": "search capa record",
+        "input": {
+            "action": "memory_search",
+            "label": "CAPA Record",
+            "memoryKey": "CAPA-#####"
+        },
+        "output": "Fetch the CAPA record number from memory and search the record."
+    },
+    {
+        "name": "edit actions taken field",
+        "input": {
+            "action": "type",
+            "label": "Actions Taken",
+            "value": "<<immediateActions>>"
+        },
+        "output": "Enter '<<immediateActions>>' in the Actions Taken rich text editor."
+    },
+    {
+        "name": "select action executed to plan",
+        "input": {
+            "action": "select_radio",
+            "label": "Action Executed to Plan",
+            "selectedText": "Yes"
+        },
+        "output": "Select 'Yes' for Action Executed to Plan."
+    },
+    {
+        "name": "enter exceptions to plan",
+        "input": {
+            "action": "type",
+            "label": "Exceptions to Plan",
+            "value": "<<qmsRationale>>"
+        },
+        "output": "Enter '<<qmsRationale>>' in the Exceptions to Plan field."
+    },
+    {
+        "name": "verify actions taken populated",
+        "input": {
+            "action": "verify",
+            "label": "Actions Taken"
+        },
+        "output": "Verify that the Actions Taken field is populated."
+    },
+    {
+        "name": "complete capa task",
+        "input": {
+            "action": "workflow_complete",
+            "label": "Complete",
+            "verdict": "Complete"
+        },
+        "output": "Complete the CAPA workflow task with verdict 'Complete'."
+    },
+    {
+        "name": "esign capa completion",
+        "input": {
+            "action": "esign",
+            "approvalMeaning": "<<qmsExternalcollaborator>>",
+            "username": "<<qmsExternal>>",
+            "password": "<<password>>"
+        },
+        "output": "Complete electronic signature using '<<qmsExternal>>' credentials."
+    },
+    {
+        "name": "verify capa hidden after approval",
+        "input": {
+            "action": "verify",
+            "label": "CAPA Visibility"
+        },
+        "output": "Verify External Collaborator can no longer access the CAPA Actions record."
+    },
+    {
+        "name": "login qms qa user",
+        "input": {
+            "action": "login",
+            "username": "<<qmsQa>>",
+            "password": "<<password>>",
+            "vault": "<<qmsVault>>"
+        },
+        "output": "Login to '<<qmsVault>>' using '<<qmsQa>>' credentials."
+    },
+    {
+        "name": "verify capa in approval",
+        "input": {
+            "action": "verify",
+            "label": "CAPA State",
+            "value": "In Approval"
+        },
+        "output": "Verify CAPA Action record state is 'In Approval'."
+    },
+    {
+        "name": "approve capa action",
+        "input": {
+            "action": "workflow_complete",
+            "label": "Approve",
+            "verdict": "Approve"
+        },
+        "output": "Approve the CAPA Action workflow."
+    },
+    {
+        "name": "select capa approval outcome",
+        "input": {
+            "action": "select",
+            "label": "Approval Outcome",
+            "selectedText": "<<qmsPlan>>"
+        },
+        "output": "Select '<<qmsPlan>>' from the Approval Outcome dropdown."
+    },
+    {
+        "name": "verify capa closed",
+        "input": {
+            "action": "verify",
+            "label": "CAPA State",
+            "value": "Closed"
+        },
+        "output": "Verify CAPA Action record state is 'Closed'."
+    },
+    {
+        "name": "store capa closed date",
+        "input": {
+            "action": "memory_store_dynamic",
+            "label": "Date Closed",
+            "memoryKey": "CAPA-Closed Date"
+        },
+        "output": "Fetch and store the CAPA closed date in memory as 'CAPA-Closed Date'."
+    },
+    {
+        "name": "search effectiveness check",
+        "input": {
+            "action": "memory_search",
+            "label": "Effectiveness Check",
+            "memoryKey": "EFF-######"
+        },
+        "output": "Fetch the Effectiveness Check record number from memory and search the record."
+    },
+    {
+        "name": "verify effectiveness check pending due date",
+        "input": {
+            "action": "verify",
+            "label": "Effectiveness Check State",
+            "value": "Pending Due Date"
+        },
+        "output": "Verify Effectiveness Check record state is 'Pending Due Date'."
+    },
+    {
+        "name": "verify monitoring end date calculation",
+        "input": {
+            "action": "verify_calculation",
+            "label": "Monitoring End Date",
+            "formula": "CAPA-Closed Date + Duration of Eff Check"
+        },
+        "output": "Verify Monitoring End Date equals CAPA Closed Date plus Duration of Effectiveness Check."
+    },
+    {
+        "name": "start effectiveness check workflow",
+        "input": {
+            "action": "workflow_start",
+            "label": "Start Effectiveness Check"
+        },
+        "output": "Start the Effectiveness Check workflow."
+    },
+    {
+        "name": "login qms ec user",
+        "input": {
+            "action": "login",
+            "username": "<<qmsEc>>",
+            "password": "<<password>>",
+            "vault": "<<qmsVault>>"
+        },
+        "output": "Login to '<<qmsVault>>' using '<<qmsEc>>' credentials."
+    },
+    {
+        "name": "select effectiveness outcome",
+        "input": {
+            "action": "select",
+            "label": "Outcome",
+            "selectedText": "<<qmsEffective>>"
+        },
+        "output": "Select '<<qmsEffective>>' from the Outcome dropdown."
+    },
+    {
+        "name": "enter effectiveness result",
+        "input": {
+            "action": "type",
+            "label": "Result",
+            "value": "<<qmsRationale>>"
+        },
+        "output": "Enter '<<qmsRationale>>' in the Result rich text editor."
+    },
+    {
+        "name": "verify effectiveness check in approval",
+        "input": {
+            "action": "verify",
+            "label": "Effectiveness Check State",
+            "value": "In Approval"
+        },
+        "output": "Verify Effectiveness Check record state is 'In Approval'."
+    },
+    {
+        "name": "reject effectiveness check",
+        "input": {
+            "action": "workflow_complete",
+            "label": "Reject",
+            "verdict": "Reject"
+        },
+        "output": "Reject the Effectiveness Check workflow."
+    },
+    {
+        "name": "verify effectiveness check in progress",
+        "input": {
+            "action": "verify",
+            "label": "Effectiveness Check State",
+            "value": "Effectiveness Check In Progress"
+        },
+        "output": "Verify Effectiveness Check record state is 'Effectiveness Check In Progress'."
+    },
+    {
+        "name": "approve effectiveness check",
+        "input": {
+            "action": "workflow_complete",
+            "label": "Approve",
+            "verdict": "Approve"
+        },
+        "output": "Approve the Effectiveness Check workflow."
+    },
+    {
+        "name": "verify effectiveness check closed",
+        "input": {
+            "action": "verify",
+            "label": "Effectiveness Check State",
+            "value": "Closed"
+        },
+        "output": "Verify Effectiveness Check record state is 'Closed'."
+    }
+]

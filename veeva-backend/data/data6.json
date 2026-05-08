@@ -1,0 +1,316 @@
+[
+    {
+        "name": "login veeva admin quality vault",
+        "input": {
+            "action": "navigate",
+            "label": "Vault URL",
+            "value": "<<vault_url>>"
+        },
+        "output": "Navigate to '<<vault_url>>'."
+    },
+    {
+        "name": "enter veeva admin username",
+        "input": {
+            "action": "type",
+            "label": "User Name",
+            "value": "<<veeva_admin_user>>"
+        },
+        "output": "Enter '<<veeva_admin_user>>' in the User Name input field."
+    },
+    {
+        "name": "select quality vault",
+        "input": {
+            "action": "select",
+            "label": "Vault",
+            "selectedText": "<<quality_vault_name>>"
+        },
+        "output": "Select '<<quality_vault_name>>' from the Vault dropdown."
+    },
+    {
+        "name": "navigate admin users and groups",
+        "input": {
+            "action": "click",
+            "label": "Users & Groups"
+        },
+        "output": "Click on Users & Groups."
+    },
+    {
+        "name": "search qms owner user",
+        "input": {
+            "action": "type",
+            "label": "User Search",
+            "value": "<<qms_owner>>"
+        },
+        "output": "Enter '<<qms_owner>>' in the User Name search field."
+    },
+    {
+        "name": "verify qms owner exists",
+        "input": {
+            "action": "verify",
+            "label": "User Record",
+            "value": "<<qms_owner>>"
+        },
+        "output": "Verify that '<<qms_owner>>' user record is present."
+    },
+    {
+        "name": "navigate business admin objects",
+        "input": {
+            "action": "click",
+            "label": "Objects"
+        },
+        "output": "Click on Objects tab."
+    },
+    {
+        "name": "search departments object",
+        "input": {
+            "action": "type",
+            "label": "Search Objects",
+            "value": "Departments"
+        },
+        "output": "Search for 'Departments' in the Objects search bar."
+    },
+    {
+        "name": "verify department active",
+        "input": {
+            "action": "verify",
+            "label": "Department State"
+        },
+        "output": "Verify that the Department record is in Active state."
+    },
+    {
+        "name": "search organizations object",
+        "input": {
+            "action": "type",
+            "label": "Search Objects",
+            "value": "Organizations"
+        },
+        "output": "Search for 'Organizations' in the Objects search bar."
+    },
+    {
+        "name": "verify facility initiated",
+        "input": {
+            "action": "verify",
+            "label": "Facility State",
+            "value": "Example Facility"
+        },
+        "output": "Verify that 'Example Facility' record is in Initiated state."
+    },
+    {
+        "name": "navigate change controls",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "QMS"
+        },
+        "output": "Select QMS from the Tab Collections dropdown."
+    },
+    {
+        "name": "click change controls",
+        "input": {
+            "action": "click",
+            "label": "Change Controls"
+        },
+        "output": "Click on Change Controls under Quality Events."
+    },
+    {
+        "name": "create change control",
+        "input": {
+            "action": "click",
+            "label": "Create"
+        },
+        "output": "Click the Create button."
+    },
+    {
+        "name": "fill change control fields",
+        "input": {
+            "action": "type",
+            "label": "Change Control Fields"
+        },
+        "output": "Enter required values in Title, Description, Justification, Category, Rating, Owning Facility, and Owning Department fields."
+    },
+    {
+        "name": "generate due date",
+        "input": {
+            "action": "generate",
+            "label": "Current Due Date",
+            "rule": "+5 days PST",
+            "memoryKey": "due_date"
+        },
+        "output": "Generate a date +5 days in PST and store it as 'due_date'."
+    },
+    {
+        "name": "save change control",
+        "input": {
+            "action": "click",
+            "label": "Save"
+        },
+        "output": "Click the Save button."
+    },
+    {
+        "name": "store change control 1",
+        "input": {
+            "action": "memory_store",
+            "label": "Change Control",
+            "memoryKey": "<<changeControl1>>"
+        },
+        "output": "Store the Change Control record number as '<<changeControl1>>'."
+    },
+    {
+        "name": "mark change control cancelled",
+        "input": {
+            "action": "select",
+            "label": "Workflow Action",
+            "selectedText": "Mark as Cancelled"
+        },
+        "output": "Select 'Mark as Cancelled' from Workflow Actions."
+    },
+    {
+        "name": "enter cancellation reason",
+        "input": {
+            "action": "type",
+            "label": "Cancellation Reason",
+            "value": "<<Cancellation_Reason>>"
+        },
+        "output": "Enter '<<Cancellation_Reason>>' in the Cancellation Reason field."
+    },
+    {
+        "name": "verify change control cancelled",
+        "input": {
+            "action": "verify",
+            "label": "Change Control State",
+            "value": "Cancelled"
+        },
+        "output": "Verify that the Change Control state is 'Cancelled'."
+    },
+    {
+        "name": "request cancellation",
+        "input": {
+            "action": "select",
+            "label": "Verdict",
+            "selectedText": "Request Cancellation"
+        },
+        "output": "Select 'Request Cancellation' verdict."
+    },
+    {
+        "name": "reject cancellation",
+        "input": {
+            "action": "select",
+            "label": "Verdict",
+            "selectedText": "Reject Cancellation"
+        },
+        "output": "Select 'Reject Cancellation' verdict."
+    },
+    {
+        "name": "approve cancellation",
+        "input": {
+            "action": "select",
+            "label": "Verdict",
+            "selectedText": "Approve Cancellation"
+        },
+        "output": "Select 'Approve Cancellation' verdict."
+    },
+    {
+        "name": "verify pending cancellation",
+        "input": {
+            "action": "verify",
+            "label": "State",
+            "value": "Pending Cancellation"
+        },
+        "output": "Verify that the Change Control state is 'Pending Cancellation'."
+    },
+    {
+        "name": "verify qms active checkbox",
+        "input": {
+            "action": "verify",
+            "label": "QMS Active"
+        },
+        "output": "Verify that the QMS Active checkbox is checked."
+    },
+    {
+        "name": "search basics customers",
+        "input": {
+            "action": "type",
+            "label": "Search Objects",
+            "value": "Basics Customers"
+        },
+        "output": "Search for 'Basics Customers' in Objects."
+    },
+    {
+        "name": "navigate promomats admin",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "PromoMats Admin"
+        },
+        "output": "Select PromoMats Admin from Tab Collections."
+    },
+    {
+        "name": "click brands tab",
+        "input": {
+            "action": "click",
+            "label": "Brands"
+        },
+        "output": "Click on the Brands tab."
+    },
+    {
+        "name": "create brand",
+        "input": {
+            "action": "click",
+            "label": "+Create"
+        },
+        "output": "Click the +Create button."
+    },
+    {
+        "name": "generate brand name",
+        "input": {
+            "action": "generate",
+            "label": "Brand Name",
+            "prefix": "Brand02_",
+            "memoryKey": "brand"
+        },
+        "output": "Generate a 4-digit alphanumeric name with prefix 'Brand02_' and store it as 'brand'."
+    },
+    {
+        "name": "select product family",
+        "input": {
+            "action": "select",
+            "label": "Product Family",
+            "selectedText": "VPM 02 Product"
+        },
+        "output": "Select 'VPM 02 Product' in the Product Family field."
+    },
+    {
+        "name": "verify brand created",
+        "input": {
+            "action": "verify",
+            "label": "Brand Record"
+        },
+        "output": "Verify that the Brand record is displayed."
+    },
+    {
+        "name": "edit brand metadata",
+        "input": {
+            "action": "type",
+            "label": "Brand Metadata"
+        },
+        "output": "Enter Brand Abbreviation and Generic Name."
+    },
+    {
+        "name": "create indication",
+        "input": {
+            "action": "generate",
+            "label": "Indication",
+            "prefix": "VPM_02_indication_",
+            "memoryKey": "indication"
+        },
+        "output": "Generate a 6-digit alphanumeric indication name and store it as 'indication'."
+    },
+    {
+        "name": "verify indication linked",
+        "input": {
+            "action": "verify",
+            "label": "Indication Record"
+        },
+        "output": "Verify that the Indication record is displayed in the related section."
+    }
+]
