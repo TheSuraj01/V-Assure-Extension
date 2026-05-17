@@ -1,5 +1,5 @@
 """
-Enterprise-grade dynamic configuration loader.
+Dynamic-grade dynamic configuration loader.
 
 Features:
 - Singleton cached config manager
@@ -9,7 +9,9 @@ Features:
 - Safe fallback handling
 - Production-safe logging
 - Dynamic prompt configuration support
-- Enterprise workflow template support
+- Dynamic workflow template support
+- Runtime cache support
+- Dynamic pattern support
 """
 
 import json
@@ -31,9 +33,13 @@ BASE_DIR = Path(__file__).resolve().parent
 
 CONFIG_PATH = BASE_DIR / "config.json"
 
+PATTERN_EXCEL_PATH = (
+    BASE_DIR / "dynamic_step_patterns.xlsx"
+)
+
 
 # ─────────────────────────────────────────────────────────────
-# Default Enterprise Configuration
+# Default Dynamic Configuration
 # ─────────────────────────────────────────────────────────────
 
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -221,7 +227,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 class ConfigManager:
     """
-    Enterprise-grade dynamic configuration manager.
+    Dynamic-grade dynamic configuration manager.
     """
 
     def __init__(
@@ -234,6 +240,8 @@ class ConfigManager:
         )
 
         self._config: Dict[str, Any] = {}
+
+        self.runtime_cache: Dict[str, Any] = {}
 
         self.reload()
 
@@ -412,6 +420,48 @@ class ConfigManager:
             )
 
     # ─────────────────────────────────────────────────────
+    # Runtime Cache
+    # ─────────────────────────────────────────────────────
+
+    def set_runtime_cache(
+        self,
+        key: str,
+        value: Any,
+    ) -> None:
+
+        self.runtime_cache[key] = value
+
+    def get_runtime_cache(
+        self,
+        key: str,
+        default: Any = None,
+    ) -> Any:
+
+        return self.runtime_cache.get(
+            key,
+            default,
+        )
+
+    # ─────────────────────────────────────────────────────
+    # Dynamic Pattern Helpers
+    # ─────────────────────────────────────────────────────
+
+    def get_pattern_excel_path(
+        self,
+    ) -> Path:
+
+        return PATTERN_EXCEL_PATH
+
+    def get_dynamic_patterns(
+        self,
+    ) -> list:
+
+        return self.get_runtime_cache(
+            "dynamic_patterns",
+            [],
+        )
+
+    # ─────────────────────────────────────────────────────
     # Section Helpers
     # ─────────────────────────────────────────────────────
 
@@ -465,7 +515,7 @@ class ConfigManager:
     ) -> Dict[str, Any]:
 
         return self.get(
-            "templates",
+            "prompt.step_patterns",
             {},
         )
 

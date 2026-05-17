@@ -1,0 +1,166 @@
+======================================================================
+  VEEVA VAULT TEST AUTOMATION SCRIPT
+======================================================================
+
+Session ID    : study_creation_a859e27e
+Generated     : 2026-05-13 00:49:41
+Model Used    : groq/llama-3.1-8b-instant
+Total Steps   : 18
+
+======================================================================
+TEST STEPS
+======================================================================
+
+PTS 1:
+1. Proceed to PTS 1.
+2. Click the Log In button.
+3. Click on the 'Navigate to the Automation: Platform Vault' link.
+4. Click on the 'User Profile' button.
+5. Take screenshot of the page.
+6. Click on the Tab Collection button.
+7. Select 'Admin' from the Business Admin dropdown list.
+8. Click on the 'Configuration' link.
+9. Click on the 'Objects' link.
+10. Click on the 'Product_200 Checklist' link.
+11. Click on the 'Fields' link.
+12. Take screenshot of the page.
+13. Click the Create button.
+14. Select 'Email' from the Field Type dropdown list.
+15. Enter 'Suraj' in the Field Type Input Field.
+16. Click the 'Cancel' button.
+17. Click the Continue button.
+18. Take screenshot of the page.
+
+======================================================================
+DETAILED STEP INFORMATION
+======================================================================
+
+Step 1: pts_1_veeva
+  Action       : step_marker
+  Label        : PTS 1
+  Original     : Proceed to PTS 1.
+  Enhanced     : Proceed to PTS 1.
+
+Step 2: log_in_veeva
+  Action       : click
+  Label        : Log In
+  Original     : Click on the 'Log In' button.
+  Enhanced     : Click the Log In button.
+  RAG Examples : 5 retrieved
+
+Step 3: navigate_to_the_automation_platform_vaul_veeva
+  Action       : click
+  Label        : Navigate to the Automation: Platform Vault
+  Original     : Click on the 'Navigate to the Automation: Platform Vault' link.
+  Enhanced     : Click on the 'Navigate to the Automation: Platform Vault' link.
+  RAG Examples : 5 retrieved
+
+Step 4: user_profile_veeva
+  Action       : click
+  Label        : User Profile
+  Original     : Click on the 'User Profile' button.
+  Enhanced     : Click on the 'User Profile' button.
+  RAG Examples : 5 retrieved
+
+Step 5: take_screenshot_of_the_page_veeva
+  Action       : screenshot
+  Label        : Screenshot
+  Original     : Take screenshot of the page.
+  Enhanced     : Take screenshot of the page.
+  RAG Examples : 1 retrieved
+
+Step 6: tab_collection_veeva
+  Action       : click
+  Label        : Tab Collection
+  Original     : Click on the 'Tab Collection' button.
+  Enhanced     : Click on the Tab Collection button.
+  RAG Examples : 5 retrieved
+
+Step 7: admin_veeva
+  Action       : select
+  Label        : Admin
+  Original     : Select 'Admin' from the Business Admin dropdown list.
+  Enhanced     : Select 'Admin' from the Business Admin dropdown list.
+  RAG Examples : 5 retrieved
+
+Step 8: configuration_veeva
+  Action       : click
+  Label        : Configuration
+  Original     : Click on the 'Configuration' link.
+  Enhanced     : Click on the 'Configuration' link.
+  RAG Examples : 5 retrieved
+
+Step 9: objects_veeva
+  Action       : click
+  Label        : Objects
+  Original     : Click on the 'Objects' link.
+  Enhanced     : Click on the 'Objects' link.
+  RAG Examples : 5 retrieved
+
+Step 10: product200_checklist_veeva
+  Action       : click
+  Label        : Product_200 Checklist
+  Original     : Click on the 'Product_200 Checklist' link.
+  Enhanced     : Click on the 'Product_200 Checklist' link.
+  RAG Examples : 5 retrieved
+
+Step 11: fields_veeva
+  Action       : click
+  Label        : Fields
+  Original     : Click on the 'Fields' link.
+  Enhanced     : Click on the 'Fields' link.
+  RAG Examples : 5 retrieved
+
+Step 12: take_screenshot_of_the_page_veeva
+  Action       : screenshot
+  Label        : Screenshot
+  Original     : Take screenshot of the page.
+  Enhanced     : Take screenshot of the page.
+  RAG Examples : 1 retrieved
+
+Step 13: create_veeva
+  Action       : click
+  Label        : Create
+  Original     : Click on the 'Create' link.
+  Enhanced     : Click the Create button.
+  RAG Examples : 4 retrieved
+
+Step 14: email_veeva
+  Action       : select
+  Label        : Email
+  Original     : Select 'Email' from the Field Type dropdown list.
+  Enhanced     : Select 'Email' from the Field Type dropdown list.
+  RAG Examples : 5 retrieved
+
+Step 15: field_type_veeva
+  Action       : enter
+  Label        : Field Type
+  Value        : Suraj
+  Original     : Enter 'Suraj' in the Field Type field.
+  Enhanced     : Enter 'Suraj' in the Field Type Input Field.
+  RAG Examples : 5 retrieved
+
+Step 16: cancel_veeva
+  Action       : click
+  Label        : Cancel
+  Original     : Click on the 'Cancel' link.
+  Enhanced     : Click the 'Cancel' button.
+  RAG Examples : 5 retrieved
+
+Step 17: continue_veeva
+  Action       : click
+  Label        : Continue
+  Original     : Click on the 'Continue' link.
+  Enhanced     : Click the Continue button.
+  RAG Examples : 5 retrieved
+
+Step 18: take_screenshot_of_the_page_veeva
+  Action       : screenshot
+  Label        : Screenshot
+  Original     : Take screenshot of the page.
+  Enhanced     : Take screenshot of the page.
+  RAG Examples : 1 retrieved
+
+======================================================================
+End of test script - study_creation_a859e27e
+======================================================================

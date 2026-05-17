@@ -24,6 +24,13 @@ from generator import (
 from models import GenerateRequest, GenerateResponse, HealthResponse
 from rag import EnhancedRAGEngine
 from utils import setup_logger
+from services.pattern_loader import (
+    init_patterns,
+)
+
+from services.excel_validator import (
+    validate_dynamic_excel,
+)
 
 load_dotenv()
 
@@ -62,6 +69,57 @@ DATA_DIR = Path(
 )
 
 rag = EnhancedRAGEngine()
+
+def init_dynamic_patterns() -> None:
+    """
+    Initialize dynamic Excel templates.
+    """
+
+    try:
+
+        excel_path = (
+            config.get_pattern_excel_path()
+        )
+
+        logger.info("=" * 70)
+        logger.info(
+            "DYNAMIC TEMPLATE INITIALIZATION"
+        )
+        logger.info("=" * 70)
+
+        logger.info(
+            "Validating dynamic Excel | %s",
+            excel_path,
+        )
+
+        validate_dynamic_excel(
+            excel_path,
+        )
+
+        logger.info(
+            "Dynamic Excel validation successful"
+        )
+
+        patterns = init_patterns()
+
+        logger.info(
+            "Dynamic templates loaded successfully"
+        )
+
+        logger.info(
+            "Total dynamic templates: %s",
+            len(patterns),
+        )
+
+    except Exception:
+
+        logger.exception(
+            "Dynamic template initialization failed"
+        )
+
+        logger.warning(
+            "Falling back to JSON templates"
+        )
 
 sessions: OrderedDict[str, GenerateResponse] = OrderedDict()
 
@@ -159,8 +217,26 @@ def init_rag() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
+    logger.info("=" * 70)
+    logger.info("APPLICATION STARTUP")
+    logger.info("=" * 70)
+
+    # Initialize RAG
     init_rag()
+
+    # Initialize dynamic templates
+    init_dynamic_patterns()
+
+    logger.info(
+        "Application startup completed successfully"
+    )
+
     yield
+
+    logger.info("=" * 70)
+    logger.info("APPLICATION SHUTDOWN")
+    logger.info("=" * 70)
 
 
 app = FastAPI(
@@ -695,6 +771,22 @@ async def list_sessions():
 
 
 @app.get("/stats")
+
+@app.get("/patterns")
+async def get_patterns():
+
+    patterns = (
+        config.get_runtime_cache(
+            "dynamic_templates",
+            {},
+        )
+    )
+
+    return {
+        "total_patterns": len(patterns),
+        "patterns": patterns,
+    }
+    
 async def get_stats():
 
     kb_stats = rag.get_stats()

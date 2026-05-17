@@ -13,10 +13,17 @@ from config.config_loader import get_config
 from models import KBEntry, StepResult
 from rag import EnhancedRAGEngine
 from utils import setup_logger
+from services.pattern_matcher import (
+    get_pattern_matcher,
+)
 
 logger = setup_logger(__name__)
 
 config = get_config()
+
+pattern_matcher = (
+    get_pattern_matcher()
+)
 
 ELEMENT_TYPE_NAMES = {
     "button": "button",
@@ -46,11 +53,6 @@ ACTION_VERBS = config.get(
     {},
 )
 
-VEEVA_TEMPLATES = config.get(
-    "templates",
-    {},
-)
-
 # ─────────────────────────────────────────────────────────────
 # Config Helpers
 # ─────────────────────────────────────────────────────────────
@@ -66,6 +68,20 @@ def get_generation_config() -> Dict:
 def get_prompt_config() -> Dict:
     return config.get("prompt", {})
 
+def get_dynamic_template(
+    action: str,
+    template_key: str,
+) -> Optional[str]:
+    """
+    Resolve dynamic template safely.
+    """
+
+    return (
+        pattern_matcher.get_template_with_fallback(
+            action=action,
+            template_key=template_key,
+        )
+    )
 
 # ─────────────────────────────────────────────────────────────
 # Completion Wrapper
@@ -393,6 +409,7 @@ def build_enhanced_prompt(
     entry: KBEntry,
     rag_examples: List[str],
     previous_steps: List[str],
+    dynamic_examples: Optional[List[str]] = None,
     context_summary: str = "",
 ) -> str:
     prompt_config = get_prompt_config()
@@ -417,6 +434,18 @@ def build_enhanced_prompt(
     interaction_block = "\n".join(interaction_lines)
 
     examples_section = ""
+    dynamic_section = ""
+    if dynamic_examples:
+        dynamic_text = "\n".join(
+            f"{i + 1}. {example}"
+            for i, example in enumerate(
+                dynamic_examples
+                )
+            )
+        dynamic_section = (
+            "\nDYNAMIC TEMPLATE EXAMPLES:\n"
+            f"{dynamic_text}\n"
+        )
     if rag_examples:
         examples_text = "\n".join(
             f"{i + 1}. {example}"
@@ -444,16 +473,15 @@ def build_enhanced_prompt(
 
 CRITICAL RULES (violating ANY rule = failure):
 {critical_rules}
-
-{context_section}{examples_section}{prev_section}
+{context_section}
+{dynamic_section}
+{examples_section}
+{prev_section}
 CURRENT INTERACTION:
 {interaction_block}
-
 DRAFT (may be inaccurate or poorly formatted):
 {entry.output}
-
 YOUR TASK: Generate ONE perfect test step following all rules above.
-
 OUTPUT (one sentence only, no prefix, no explanation):""".strip()
 
     return prompt
@@ -463,48 +491,122 @@ OUTPUT (one sentence only, no prefix, no explanation):""".strip()
 # Template Generation
 # ─────────────────────────────────────────────────────────────
 
-def try_template_generation(entry: KBEntry) -> Optional[str]:
+def try_template_generation(
+    entry: KBEntry,
+) -> Optional[str]:
+
     inp = entry.input
-    action = inp.action.lower()
+
+    action = (
+        inp.action.lower()
+    )
+
     label = inp.label
+
     value = inp.value or ""
-    selected = inp.selectedText or ""
-    
-    # Navigation patterns
-    if action == "click" and ">" in label:
-        return f"Navigate to {label}."
-    
-    if action == "click" and any(word in label.lower() for word in ["admin", "business admin", "tab collection"]):
-        if "admin" in label.lower() and "business" not in label.lower():
-            return f"Click on the {label} tab in the navigation bar."
-        elif "business admin" in label.lower():
-            return VEEVA_TEMPLATES["tab_collection"].format(label=label)
-    
-    # Data entry with value
-    if action in ["enter", "input", "type"] and value:
-        if "input field" not in label.lower():
-            return VEEVA_TEMPLATES["input_with_value"].format(value=value, label=label)
-    
-    # Dropdown selection
-    if action == "select" and selected:
-        if inp.dropdownLabel:
-            return VEEVA_TEMPLATES["dropdown_select"].format(
-                option=selected,
-                label=inp.dropdownLabel
+
+    selected = (
+        inp.selectedText or ""
+    )
+
+    try:
+
+        # ─────────────────────────────────────────────
+        # Navigation
+        # ─────────────────────────────────────────────
+
+        if (
+            action == "click"
+            and ">" in label
+        ):
+
+            template = (
+                get_dynamic_template(
+                    action="click",
+                    template_key="navigate_to",
+                )
             )
-        else:
-            return VEEVA_TEMPLATES["dropdown_select"].format(
-                option=selected,
-                label=label
+
+            if template:
+
+                return template.format(
+                    label=label,
+                )
+
+        # ─────────────────────────────────────────────
+        # Input Fields
+        # ─────────────────────────────────────────────
+
+        if (
+            action
+            in ["enter", "input", "type"]
+            and value
+        ):
+
+            template = (
+                get_dynamic_template(
+                    action="enter",
+                    template_key="input_with_value",
+                )
             )
-    
-    # Simple clicks for buttons, links, icons, tabs, etc.
-    if action == "click":
-        lower_label = label.lower()
-        if any(w in lower_label for w in ["button", "link", "icon", "tab", "menu"]):
-            return f"Click the {label}."
-        else:
-            return None
+
+            if template:
+
+                return template.format(
+                    value=value,
+                    label=label,
+                )
+
+        # ─────────────────────────────────────────────
+        # Dropdown Select
+        # ─────────────────────────────────────────────
+
+        if (
+            action == "select"
+            and selected
+        ):
+
+            template = (
+                get_dynamic_template(
+                    action="select",
+                    template_key="dropdown_select",
+                )
+            )
+
+            if template:
+
+                return template.format(
+                    option=selected,
+                    label=(
+                        inp.dropdownLabel
+                        or label
+                    ),
+                )
+
+        # ─────────────────────────────────────────────
+        # Click Actions
+        # ─────────────────────────────────────────────
+
+        if action == "click":
+
+            template = (
+                get_dynamic_template(
+                    action="click",
+                    template_key="button_click",
+                )
+            )
+
+            if template:
+
+                return template.format(
+                    label=label,
+                )
+
+    except Exception:
+
+        logger.exception(
+            "Dynamic template generation failed"
+        )
 
     return None
 
@@ -534,6 +636,12 @@ async def generate_single_step(
     )
 
     rag_examples = []
+
+    dynamic_examples = (
+        pattern_matcher.get_template_examples(
+            action=entry.input.action,
+        )
+    )
 
     if rag:
 
@@ -577,6 +685,7 @@ async def generate_single_step(
         entry=entry,
         rag_examples=rag_examples,
         previous_steps=previous_steps,
+        dynamic_examples=dynamic_examples,
     )
 
     generation_config = (
@@ -781,4 +890,4 @@ async def run_streaming_enhanced(
             f"{json.dumps(payload)}\n\n"
         )
 
-    yield "data: [DONE]\n\n"
+    yield 'data: {"done": true}\n\n'

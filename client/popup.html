@@ -30,7 +30,9 @@
     }
 
     body {
-      width: 500px;
+      width: 100%;
+      min-width: 400px;
+      max-width: 800px;
       min-height: 240px;
       max-height: 620px;
       background: var(--bg);
@@ -39,6 +41,7 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      margin: 0;
     }
 
     /* ── Header ── */
@@ -114,6 +117,7 @@
     .controls {
       padding: 10px 16px;
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       border-bottom: 1px solid var(--border);
       background: var(--s2);
@@ -243,6 +247,7 @@
     /* ── Filter chips ── */
     .filters {
       display: flex;
+      flex-wrap: wrap;
       gap: 6px;
       padding: 8px 16px;
       border-bottom: 1px solid var(--border);
@@ -738,9 +743,10 @@
   </div>
 
   <!-- Footer -->
-  <div class="footer">
+  <div class="footer" style="flex-wrap: wrap;">
     <button class="footer-btn" id="exportRawBtn">⬇ Raw JSON</button>
     <button class="footer-btn" id="exportKbBtn">⬇ KB JSON</button>
+    <button class="footer-btn" id="downloadMainBtn" style="display:none;color:var(--cyan);border-color:var(--cyan);">⬇ Prompts</button>
     <button class="footer-btn" id="clearBtn" style="margin-left:auto;color:var(--red);">✕ Clear</button>
   </div>
 

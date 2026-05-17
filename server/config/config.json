@@ -105,50 +105,6 @@
             "Capture"
         ]
     },
-    "templates": {
-        "memory_store": "Store the fetched value in the memory with the key '{key}'.",
-        "memory_fetch": "Fetch the '{key}' value from the memory.",
-        "input_with_memory": "Enter the fetched value in the {field_name} Input Field.",
-        "admin_nav": "Navigate to Admin > {section}.",
-        "tab_collection": "Click on {label} from the tab collection.",
-        "menu_select": "Click the {menu} menu and select {option}.",
-        "input_with_value": "Enter <<{value}>> in {label} Input Field.",
-        "input_and_action": "Enter <<{value}>> in {label} Input Field and {action}.",
-        "dropdown_select": "Select <<{option}>> from the {label} dropdown list.",
-        "dropdown_simple": "Select {option} from the dropdown.",
-        "button_click": "Click {label} button.",
-        "button_click_with_context": "Click {label} button {context}.",
-        "link_click": "Click {label}.",
-        "verify_state": "Verify {condition}.",
-        "verify_user": "Verify the <<{user}>> user {condition}.",
-        "clear_field": "Clear {field_name} {field_type} field.",
-        "keyboard_action": "Click {key_name} Key.",
-        "generate_dynamic_value": "Generate a {length} digit {string_type} username with suffix '{suffix}'.",
-        "generate_large_string": "Create a random {length} characters string.",
-        "enter_generated_value": "Enter the generated {value_type} in the {field_name} {field_type} Field.",
-        "generate_date": "Generate {offset} {timezone} date in {format} format.",
-        "enter_generated_date": "Enter the generated date in the {field_name} {field_type} Field.",
-        "reload_page": "Reload Page",
-        "navigate_back": "Navigate Back",
-        "create_object_record": "Create a Object record using Veeva Vault API using value <<{json_object}>>.",
-        "create_document_record": "Create a Document record using Veeva Vault API using value <<{json_object}>>.",
-        "store_record_value": "Store the {record_value} value in the memory with the key '{key_name}'.",
-        "open_new_tab": "Open New Tab",
-        "switch_tab": "Switch to Tab {tab_no}.",
-        "open_local_pdf": "Open the local <<{variable_name}>> in VAssure PDF Reader application.",
-        "download_source_file": "Click on the Source File Button to download the file.",
-        "store_downloaded_file": "Store the downloaded file path in the memory with the key '{key_name}'.",
-        "open_downloaded_pdf": "Open the fetched '{key_name}' in the VAssure PDF Reader application url <<{reader_url}>>.",
-        "view_document_info": "View {document_info_type} by view document information in the VAssure PDF Reader.",
-        "close_document_info": "Close the document information in the VAssure PDF Reader.",
-        "navigate_pdf_page": "Navigate to page {page_no} in the PDF document.",
-        "navigate_last_page": "Navigate to the last page in the PDF document.",
-        "navigate_previous_page": "Navigate to the previous page in the PDF document.",
-        "change_pdf_view": "Change the page view to {view_type} in the VAssure PDF Reader.",
-        "find_pdf_text": "Find '{search_string}' text in the VAssure PDF Reader.",
-        "close_search_box": "Close the search box in VAssure PDF Reader application.",
-        "display_pdf_hierarchy": "Display PDF hierarchy in VAssure PDF Reader."
-    },
     "prompting": {
         "forbidden_words": [
             "span",
@@ -169,10 +125,10 @@
         ]
     },
     "prompt": {
-        "system_instruction": "You are an enterprise-grade Veeva Vault automation test step generation engine. Your responsibility is to generate highly structured, reusable, human-readable, enterprise-standard automation steps following the exact formatting and workflow conventions provided.",
+        "system_instruction": "You are an dynamic-grade Veeva Vault automation test step generation engine. Your responsibility is to generate highly structured, reusable, human-readable, dynamic-standard automation steps following the exact formatting and workflow conventions provided.",
         "critical_rules": [
             "OUTPUT FORMAT:",
-            "- Generate professional enterprise QA automation steps",
+            "- Generate professional dynamic QA automation steps",
             "- Generate ONLY actionable automation instructions",
             "- Never generate explanations",
             "- Never generate markdown",
@@ -180,7 +136,7 @@
             "- Preserve business terminology exactly",
             "- Preserve capitalization of labels and sections",
             "- Use human-readable business-friendly wording",
-            "- Follow Veeva Vault enterprise automation style",
+            "- Follow Veeva Vault dynamic automation style",
             "",
             "- Write EXACTLY ONE sentence",
             "- NO number prefix (e.g., \"1.\", \"Step 1:\")",
@@ -278,7 +234,7 @@
             "Use labels exactly as provided",
             "Preserve section names exactly",
             "Preserve capitalization exactly",
-            "Keep enterprise wording consistent",
+            "Keep dynamic wording consistent",
             "Never shorten labels",
             "Never remove suffixes like Button, Field, Dropdown"
         ],
@@ -289,7 +245,7 @@
             "Never omit dynamic values",
             "Keep generated values reusable"
         ],
-        "task_instruction": "Generate enterprise-grade Veeva Vault automation steps following the exact enterprise workflow patterns and formatting rules.",
+        "task_instruction": "Generate dynamic-grade Veeva Vault automation steps following the exact dynamic workflow patterns and formatting rules.",
         "output_instruction": "Generate only the final automation step."
     },
     "logging": {

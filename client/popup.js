@@ -334,6 +334,7 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
   const outputEl = document.getElementById('genOutput');
   const runBtn = document.getElementById('runGenBtn');
   const dlBtn = document.getElementById('downloadOutputBtn');
+  const dlMainBtn = document.getElementById('downloadMainBtn');
 
   if (allSteps.length === 0) {
     outputEl.textContent = '❌ No steps captured yet.';
@@ -345,6 +346,7 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
   generatedSessionId = null;
   outputEl.textContent = '';
   dlBtn.style.display = 'none';
+  dlMainBtn.style.display = 'none';
   runBtn.disabled = true;
 
   const payload = {
@@ -394,6 +396,7 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
             if (evt.done) {
               outputEl.textContent += `\n✅ Done — ${generatedSteps.length} steps generated`;
               dlBtn.style.display = 'flex';
+              dlMainBtn.style.display = 'flex';
               break;
             }
             generatedSteps.push(evt);
@@ -434,6 +437,7 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
       outputEl.textContent = data.full_script;
       outputEl.textContent += `\n\n✅ Session: ${data.session_id} | Model: ${data.model_used}`;
       dlBtn.style.display = 'flex';
+      dlMainBtn.style.display = 'flex';
     }
 
   } catch (err) {
@@ -445,7 +449,7 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
   }
 });
 
-document.getElementById('downloadOutputBtn').addEventListener('click', async () => {
+const downloadPromptsHandler = async () => {
   if (generatedSessionId) {
     window.open(`${DEFAULT_BACKEND}/download/${generatedSessionId}`, '_blank');
   } else {
@@ -455,7 +459,10 @@ document.getElementById('downloadOutputBtn').addEventListener('click', async () 
     a.download = `veeva_steps_${Date.now()}.txt`;
     a.click();
   }
-});
+};
+
+document.getElementById('downloadOutputBtn').addEventListener('click', downloadPromptsHandler);
+document.getElementById('downloadMainBtn').addEventListener('click', downloadPromptsHandler);
 
 document.getElementById('copyOutputBtn').addEventListener('click', () => {
   copyText(document.getElementById('genOutput').textContent);
