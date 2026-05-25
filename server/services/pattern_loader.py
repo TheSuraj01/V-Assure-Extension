@@ -10,6 +10,7 @@ Responsibilities:
 - Provide safe fallback support
 """
 
+import io
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -65,14 +66,10 @@ class DynamicPatternLoader:
         self,
     ) -> Dict[str, Dict[str, Any]]:
         """
-        Load dynamic templates from Excel.
+        Load dynamic templates from an Excel file on disk.
 
         Returns:
-            {
-                "button_click": {
-                    ...
-                }
-            }
+            {"button_click": {...}}
         """
 
         if not self.excel_path.exists():
@@ -91,33 +88,7 @@ class DynamicPatternLoader:
                 data_only=True,
             )
 
-            if SHEET_NAME not in workbook.sheetnames:
-
-                raise ValueError(
-                    f"Sheet '{SHEET_NAME}' not found"
-                )
-
-            sheet = workbook[SHEET_NAME]
-
-            headers = self._extract_headers(
-                sheet,
-            )
-
-            self._validate_headers(
-                headers,
-            )
-
-            patterns = self._parse_sheet(
-                sheet=sheet,
-                headers=headers,
-            )
-
-            logger.info(
-                "Dynamic patterns loaded successfully | count=%s",
-                len(patterns),
-            )
-
-            return patterns
+            return self._parse_workbook(workbook)
 
         except Exception:
 
@@ -126,6 +97,71 @@ class DynamicPatternLoader:
             )
 
             return {}
+
+    def load_patterns_from_bytes(
+        self,
+        data: io.BytesIO,
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Load dynamic templates from an in-memory BytesIO buffer.
+        No file is read from disk - zero disk I/O.
+
+        Returns:
+            {"button_click": {...}}
+        """
+
+        try:
+
+            data.seek(0)
+
+            workbook = load_workbook(
+                filename=data,
+                data_only=True,
+            )
+
+            return self._parse_workbook(workbook)
+
+        except Exception:
+
+            logger.exception(
+                "Failed loading dynamic patterns from bytes"
+            )
+
+            return {}
+
+    def _parse_workbook(
+        self,
+        workbook,
+    ) -> Dict[str, Dict[str, Any]]:
+        """Shared parse logic for both disk and in-memory paths."""
+
+        if SHEET_NAME not in workbook.sheetnames:
+
+            raise ValueError(
+                f"Sheet '{SHEET_NAME}' not found"
+            )
+
+        sheet = workbook[SHEET_NAME]
+
+        headers = self._extract_headers(
+            sheet,
+        )
+
+        self._validate_headers(
+            headers,
+        )
+
+        patterns = self._parse_sheet(
+            sheet=sheet,
+            headers=headers,
+        )
+
+        logger.info(
+            "Dynamic patterns loaded successfully | count=%s",
+            len(patterns),
+        )
+
+        return patterns
 
     # ─────────────────────────────────────────────────────
     # Internal Helpers
@@ -292,9 +328,11 @@ class DynamicPatternLoader:
 
                     "priority":
                         int(
-                            row_data.get(
-                                "priority",
-                                1,
+                            float(
+                                row_data.get(
+                                    "priority",
+                                    1,
+                                )
                             )
                         ),
                 }
@@ -358,8 +396,30 @@ class DynamicPatternLoader:
     def register_patterns(
         self,
     ) -> Dict[str, Dict[str, Any]]:
+        """Register patterns loaded from disk into the runtime cache."""
 
         patterns = self.load_patterns()
+
+        return self._register(patterns)
+
+    def register_patterns_from_bytes(
+        self,
+        data: io.BytesIO,
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Register patterns loaded from an in-memory BytesIO into the runtime cache.
+        Zero disk I/O - preferred in production.
+        """
+
+        patterns = self.load_patterns_from_bytes(data)
+
+        return self._register(patterns)
+
+    def _register(
+        self,
+        patterns: Dict[str, Dict[str, Any]],
+    ) -> Dict[str, Dict[str, Any]]:
+        """Shared cache-registration logic."""
 
         if patterns:
 
@@ -382,14 +442,27 @@ class DynamicPatternLoader:
 
 
 # ─────────────────────────────────────────────────────────────
-# Singleton Helper
+# Singleton Helpers
 # ─────────────────────────────────────────────────────────────
 
 def init_patterns() -> Dict[str, Dict[str, Any]]:
     """
-    Initialize dynamic patterns at startup.
+    Initialize dynamic patterns from disk (startup / fallback).
     """
 
     loader = DynamicPatternLoader()
 
     return loader.register_patterns()
+
+
+def init_patterns_from_bytes(
+    data: io.BytesIO,
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Initialize dynamic patterns from an in-memory BytesIO buffer.
+    Zero disk I/O - preferred in production.
+    """
+
+    loader = DynamicPatternLoader()
+
+    return loader.register_patterns_from_bytes(data)

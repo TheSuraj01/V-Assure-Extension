@@ -12,6 +12,7 @@ Responsibilities:
 - Validate priority values
 """
 
+import io
 from pathlib import Path
 from typing import Dict, List, Set
 
@@ -84,7 +85,7 @@ class DynamicExcelValidator:
         self,
     ) -> bool:
         """
-        Validate dynamic pattern Excel.
+        Validate dynamic pattern Excel from a file path.
 
         Returns:
             bool
@@ -101,6 +102,35 @@ class DynamicExcelValidator:
             filename=self.excel_path,
             data_only=True,
         )
+
+        return self._validate_workbook(workbook)
+
+    def validate_from_bytes(
+        self,
+        data: io.BytesIO,
+    ) -> bool:
+        """
+        Validate dynamic pattern Excel from an in-memory BytesIO buffer.
+        No file path needed — zero disk I/O.
+
+        Returns:
+            bool
+        """
+
+        data.seek(0)
+
+        workbook = load_workbook(
+            filename=data,
+            data_only=True,
+        )
+
+        return self._validate_workbook(workbook)
+
+    def _validate_workbook(
+        self,
+        workbook,
+    ) -> bool:
+        """Shared validation logic for both file-path and in-memory paths."""
 
         self._validate_sheet_exists(
             workbook,
@@ -395,7 +425,9 @@ class DynamicExcelValidator:
 
         try:
 
-            priority_value = int(priority)
+            # Google Sheets exports numbers as floats (e.g. "1.0").
+            # Convert via float() first so both "1" and "1.0" are accepted.
+            priority_value = int(float(priority))
 
             if priority_value < 1:
 
@@ -417,7 +449,7 @@ def validate_dynamic_excel(
     excel_path: Path,
 ) -> bool:
     """
-    Validate dynamic Excel file.
+    Validate dynamic Excel file from disk path.
 
     Returns:
         bool
@@ -428,3 +460,25 @@ def validate_dynamic_excel(
     )
 
     return validator.validate()
+
+
+def validate_dynamic_excel_from_bytes(
+    data: io.BytesIO,
+) -> bool:
+    """
+    Validate dynamic Excel from an in-memory BytesIO buffer.
+    No disk path required — zero disk I/O.
+
+    Returns:
+        bool
+    """
+
+    # excel_path is unused when calling validate_from_bytes,
+    # but DynamicExcelValidator.__init__ requires it.
+    dummy_path = Path("in_memory.xlsx")
+
+    validator = DynamicExcelValidator(
+        excel_path=dummy_path,
+    )
+
+    return validator.validate_from_bytes(data)

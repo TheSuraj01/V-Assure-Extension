@@ -1,4 +1,5 @@
 import copy
+import io
 import json
 import os
 import uuid
@@ -26,11 +27,16 @@ from rag import EnhancedRAGEngine
 from utils import setup_logger
 from services.pattern_loader import (
     init_patterns,
+    init_patterns_from_bytes,
 )
 
 from services.excel_validator import (
     validate_dynamic_excel,
+    validate_dynamic_excel_from_bytes,
 )
+
+from services.google_sheets_service import GoogleSheetsService
+from config.config_loader import reload_config, get_config
 
 load_dotenv()
 
@@ -70,21 +76,67 @@ DATA_DIR = Path(
 
 rag = EnhancedRAGEngine()
 
-def init_dynamic_patterns() -> None:
+def init_dynamic_patterns(
+    sheet_bytes: "io.BytesIO | None" = None,
+) -> None:
     """
     Initialize dynamic Excel templates.
+
+    When sheet_bytes is provided (BytesIO), the template is validated
+    and parsed entirely in memory - zero disk I/O.
+
+    When sheet_bytes is None, falls back to the local disk file
+    (config/dynamic_step_patterns.xlsx) if it exists.
     """
 
-    try:
-
-        excel_path = (
-            config.get_pattern_excel_path()
-        )
+    # ── In-memory path (production) ──────────────────────────────────────
+    if sheet_bytes is not None:
 
         logger.info("=" * 70)
-        logger.info(
-            "DYNAMIC TEMPLATE INITIALIZATION"
-        )
+        logger.info("DYNAMIC TEMPLATE INITIALIZATION (in-memory)")
+        logger.info("=" * 70)
+
+        try:
+            logger.info("Validating dynamic Excel from memory")
+
+            sheet_bytes.seek(0)
+            validate_dynamic_excel_from_bytes(sheet_bytes)
+
+            logger.info("Dynamic Excel validation successful")
+
+            sheet_bytes.seek(0)
+            patterns = init_patterns_from_bytes(sheet_bytes)
+
+            logger.info(
+                "Dynamic templates loaded successfully | total=%s",
+                len(patterns),
+            )
+
+        except Exception:
+            logger.exception("Dynamic template initialization failed (in-memory)")
+            logger.warning("Falling back to JSON templates")
+
+        return
+
+    # ── Disk fallback path ───────────────────────────────────────────────
+    try:
+
+        excel_path = config.get_pattern_excel_path()
+
+        if not excel_path.exists():
+            logger.info("=" * 70)
+            logger.info("DYNAMIC TEMPLATE STATUS")
+            logger.info("=" * 70)
+            logger.info(
+                "Excel template file not found on disk: %s", excel_path
+            )
+            logger.warning(
+                "Using local fallback JSON templates for initial state."
+            )
+            return
+
+        logger.info("=" * 70)
+        logger.info("DYNAMIC TEMPLATE INITIALIZATION (from disk)")
         logger.info("=" * 70)
 
         logger.info(
@@ -92,34 +144,20 @@ def init_dynamic_patterns() -> None:
             excel_path,
         )
 
-        validate_dynamic_excel(
-            excel_path,
-        )
+        validate_dynamic_excel(excel_path)
 
-        logger.info(
-            "Dynamic Excel validation successful"
-        )
+        logger.info("Dynamic Excel validation successful")
 
         patterns = init_patterns()
 
         logger.info(
-            "Dynamic templates loaded successfully"
-        )
-
-        logger.info(
-            "Total dynamic templates: %s",
+            "Dynamic templates loaded successfully | total=%s",
             len(patterns),
         )
 
     except Exception:
-
-        logger.exception(
-            "Dynamic template initialization failed"
-        )
-
-        logger.warning(
-            "Falling back to JSON templates"
-        )
+        logger.exception("Dynamic template initialization failed")
+        logger.warning("Falling back to JSON templates")
 
 sessions: OrderedDict[str, GenerateResponse] = OrderedDict()
 
@@ -225,8 +263,36 @@ async def lifespan(app: FastAPI):
     # Initialize RAG
     init_rag()
 
-    # Initialize dynamic templates
-    init_dynamic_patterns()
+    # ── Google Sheets: first load at startup ────────────────────────────
+    # Download the step-pattern template into memory once on boot.
+    # No file is written to disk.
+    google_sharing_link = os.getenv("GOOGLE_SHARING_LINK", "").strip()
+
+    startup_bytes = None
+
+    if google_sharing_link:
+        logger.info(
+            "Startup: Downloading Google Sheets template into memory | %s",
+            google_sharing_link,
+        )
+        try:
+            startup_bytes = GoogleSheetsService.download_sheet_as_bytes(
+                sharing_url=google_sharing_link,
+            )
+            logger.info("Startup: Google Sheet loaded into memory successfully")
+        except Exception as _exc:
+            logger.warning(
+                "Startup: Google Sheets download failed, "
+                "will use local disk cache or JSON fallback | %s",
+                _exc,
+            )
+    else:
+        logger.info(
+            "Startup: GOOGLE_SHARING_LINK not set — skipping template download"
+        )
+
+    # Parse patterns from the downloaded bytes (or fallback to disk/JSON)
+    init_dynamic_patterns(startup_bytes)
 
     logger.info(
         "Application startup completed successfully"
@@ -519,6 +585,39 @@ async def health():
     )
 
 
+async def _run_sheet_sync() -> None:
+    """
+    Downloads the latest Google Sheet into memory and refreshes the
+    runtime pattern cache. Called at the start of every /generate request
+    so templates are always up-to-date with the sheet.
+    Fails silently — generation continues with the last-known-good cache.
+    """
+    global config
+
+    google_sharing_link = os.getenv("GOOGLE_SHARING_LINK", "").strip()
+
+    if not google_sharing_link:
+        return
+
+    try:
+        sheet_bytes = GoogleSheetsService.download_sheet_as_bytes(
+            sharing_url=google_sharing_link,
+        )
+
+        logger.info("Sheet sync: Google Sheet loaded into memory")
+
+        config = reload_config()
+        init_dynamic_patterns(sheet_bytes)
+
+        logger.info("Sheet sync: templates reloaded into active cache")
+
+    except Exception as exc:
+        logger.warning(
+            "Sheet sync failed (keeping current cache): %s",
+            exc,
+        )
+
+
 @app.post(
     "/generate",
     response_model=GenerateResponse,
@@ -526,6 +625,9 @@ async def health():
 async def generate(
     req: GenerateRequest,
 ):
+
+    # Sync latest templates from Google Sheets before generating
+    await _run_sheet_sync()
 
     if not req.entries:
         raise HTTPException(
@@ -635,6 +737,9 @@ async def generate(
 async def generate_stream(
     req: GenerateRequest,
 ):
+
+    # Sync latest templates from Google Sheets before generating
+    await _run_sheet_sync()
 
     if not req.entries:
         raise HTTPException(
