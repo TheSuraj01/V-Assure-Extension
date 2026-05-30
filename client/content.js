@@ -4,7 +4,18 @@
 
   const Config = {
     SKIP_TAGS: new Set(['html', 'body', 'head', 'script', 'style', 'meta', 'svg', 'path', 'circle', 'rect', 'g', 'defs', 'use', 'polygon', 'polyline', 'ellipse', 'line']),
-    NOISE_PATTERNS: [/^delegate access/i, /^\d+$/, /^(true|false|null|undefined)$/i, /^[\s\W]+$/],
+    NOISE_PATTERNS: [
+      /^delegate access/i,
+      /^\d+$/,
+      /^(true|false|null|undefined)$/i,
+      /^[\s\W]+$/,
+      // Session-timeout / notification banners: long sentences ending with punctuation
+      /^.{55,}[.!?]$/,
+      // Explicit Veeva session-timeout phrases
+      /logged off vault/i,
+      /will be logged off/i,
+      /click here if you wish to continue/i,
+    ],
     MIN_LABEL_LENGTH: 2,
     MAX_LABEL_LENGTH: 80,
     VEEVA_SELECTORS: ['label', '[class*="field-label"]', '[class*="form-label"]', '[class*="input-label"]', '[class*="vv-label"]', '[class*="label-text"]', 'legend', '[data-label]'],
@@ -30,6 +41,9 @@
       const aria = (el.getAttribute('aria-label') || '').toLowerCase();
 
       if (aria.includes('tab collection') || title.includes('tab collection') || aria.includes('user profile') || title.includes('user profile')) return 'button';
+      if (cls.includes('tabcollection-menu-button') || cls.includes('tabcollection-menu')) return 'button';
+      // Waffle icon (data-icon="waffle") is always the Tab Collections trigger
+      if (el.getAttribute('data-icon') === 'waffle' || el.querySelector('[data-icon="waffle"]')) return 'button';
       if (el.querySelector('[aria-label*="Tab Collection" i], [title*="Tab Collection" i], [aria-label*="User Profile" i], [title*="User Profile" i]')) return 'button';
 
       if (tag === 'button' || role === 'button' || (tag === 'input' && ['submit', 'button', 'reset'].includes(type))) return 'button';
@@ -61,7 +75,7 @@
       if (child) {
         const cTitle = (child.getAttribute('title') || '').toLowerCase();
         const cAria = (child.getAttribute('aria-label') || '').toLowerCase();
-        if (cTitle.includes('tab collection') || cAria.includes('tab collection')) return 'Tab Collection';
+        if (cTitle.includes('tab collection') || cAria.includes('tab collection')) return 'Tab Collections';
         if (cTitle.includes('user profile') || cAria.includes('user profile')) return 'User Profile';
       }
 
@@ -158,12 +172,28 @@
     }
 
     static getDropdownContext(el) {
-      const container = el.closest('[class*="dropdown"], [role="listbox"], [class*="picker"], [class*="menu-list"], [class*="options"], [class*="picklist"], [class*="vv-menu"], [class*="select2-"], [class*="chzn-drop"], [class*="k-list"]');
+      const container = el.closest('[class*="dropdown"], [role="listbox"], [class*="picker"], [class*="menu-list"], [class*="options"], [class*="picklist"], [class*="vv-menu"], [class*="select2-"], [class*="chzn-drop"], [class*="k-list"], [class*="tabcollection"]');
       if (!container) return null;
+
+      // ── Tab Collections panel: always resolve from the trigger button ──
+      // Calling resolveLabel() on the panel reads ALL the option texts
+      // (Admin, Business Admin, All, ...) and returns the wrong string.
+      const cCls = typeof container.className === 'string' ? container.className : '';
+      if (cCls.includes('tabcollection')) {
+        // Find the trigger button — prefer within the same span, else global search
+        const triggerBtn =
+          container.querySelector('[aria-label*="Tab Collection" i]') ||
+          container.querySelector('[class*="tabcollection-menu-button"]') ||
+          document.querySelector('[class*="tabcollection-menu-button"]');
+        if (triggerBtn) {
+          return triggerBtn.getAttribute('aria-label') || 'Tab Collections';
+        }
+        return 'Tab Collections';
+      }
 
       const aria = (container.getAttribute('aria-label') || '').toLowerCase();
       const title = (container.getAttribute('title') || '').toLowerCase();
-      if (aria.includes('tab collection') || title.includes('tab collection')) return 'Tab Collection';
+      if (aria.includes('tab collection') || title.includes('tab collection')) return 'Tab Collections';
       if (aria.includes('user profile') || title.includes('user profile')) return 'User Profile';
 
       if (container.id) {
@@ -198,27 +228,51 @@
       return null;
     }
 
+    static isNavbarItem(el) {
+      // Detects Veeva's top navigation bar links.
+      // These are <a class="vv-navbar-link"> inside <ul class="vv-navbar-nav">.
+      // They must NEVER be treated as dropdown selections.
+      return !!(
+        el.closest('ul.vv-navbar-nav') ||
+        el.closest('[class*="vv-navbar-nav"]') ||
+        el.closest('[class*="vv-navbar-item"]') ||
+        (el.tagName && el.tagName.toLowerCase() === 'a' && el.classList.contains('vv-navbar-link'))
+      );
+    }
+
     static isInsideVeevaDropdown(el) {
-      return !!el.closest('[role="listbox"], [role="option"], [role="menu"], [role="menuitem"], [class*="dropdown-menu"], [class*="dropdown-list"], [class*="option-list"], [class*="picklist"], [class*="autocomplete"], [class*="vv-menu"], [class*="vv-list"], [class*="select2-"], [class*="chzn-"], [class*="k-list"]');
+      // Navbar items are never dropdown selections — guard first
+      if (DOMUtils.isNavbarItem(el)) return false;
+
+      const inStandardDropdown = !!el.closest('[role="listbox"], [role="option"], [role="menu"], [role="menuitem"], [class*="dropdown-menu"], [class*="dropdown-list"], [class*="option-list"], [class*="picklist"], [class*="autocomplete"], [class*="vv-menu"], [class*="vv-list"], [class*="select2-"], [class*="chzn-"], [class*="k-list"]');
+      if (inStandardDropdown) return true;
+      const tabColContainer = el.closest('[class*="tabcollection"]');
+      if (tabColContainer) {
+        const isTriggerBtn = !!(el.closest('[class*="tabcollection-menu-button"]') || (el.tagName.toLowerCase() === 'button' && (el.getAttribute('aria-label') || '').toLowerCase().includes('tab collection')));
+        if (!isTriggerBtn) return true;
+      }
+      return false;
     }
 
     static findInteractiveParent(node) {
       if (!node) return null;
       const clickable = node.closest('button, a, [role="button"], [role="tab"], [role="link"], [role="menuitem"], [role="option"], [class*="btn"], [class*="tab"], [onclick], [data-action], [data-test]');
       if (clickable) return clickable;
+      const tabColBtn = node.closest('[class*="tabcollection-menu-button"], [aria-label*="Tab Collection" i]');
+      if (tabColBtn) return tabColBtn;
 
       let curr = node;
-      for (let i = 0; i < 4 && curr && curr !== document.body; i++) {
-        const txt = (curr.innerText || curr.textContent || '').toLowerCase();
+      for (let i = 0; i < 6 && curr && curr !== document.body; i++) {
         const title = (curr.getAttribute('title') || '').toLowerCase();
         const aria = (curr.getAttribute('aria-label') || '').toLowerCase();
-        
-        if (title.includes('tab collection') || aria.includes('tab collection') || 
-            title.includes('user profile') || aria.includes('user profile')) {
+        const cls = typeof curr.className === 'string' ? curr.className : '';
+
+        if (title.includes('tab collection') || aria.includes('tab collection') ||
+          title.includes('user profile') || aria.includes('user profile') ||
+          cls.includes('tabcollection-menu-button')) {
           return curr;
         }
-        
-        // Prevent greedy matching by only checking short text content
+        const txt = (curr.innerText || curr.textContent || '').toLowerCase();
         if (txt.length < 50 && (txt.includes('tab collection') || txt.includes('user profile'))) {
           return curr;
         }
@@ -433,6 +487,9 @@
       let bestLabel = label || placeholder || ids.ariaLabel || ids.name || ids.id || DOMUtils.findNearbyLabel(el);
       if (!bestLabel && DOMUtils.isNoisy(visibleText)) bestLabel = ids.name || ids.id || 'input field';
 
+      // Reject the step entirely if the resolved label is noisy (e.g. session-timeout banners)
+      if (bestLabel && DOMUtils.isNoisy(bestLabel)) return null;
+
       const tag = el.tagName.toLowerCase();
       const action = (eventType === 'input' || (['input', 'textarea'].includes(tag) && typedValue !== undefined) || (el.isContentEditable && typedValue !== undefined)) ? 'enter' : (tag === 'select' || eventType === 'change' || eventType === 'select-click') ? 'select' : 'click';
 
@@ -461,24 +518,42 @@
       const el = step.element;
       const label = el.label || el.placeholder || el.type;
       const hType = Config.TYPE_NAMES[el.type] || 'element';
-      const input = { action: step.action, label };
+      let kbAction = step.action;
+      if (step.action === 'click' && step.dropdownParent && el.selectedValue) {
+        kbAction = 'select';
+      }
+
+      const input = { action: kbAction, label };
       if (step.userStep) input.userStep = step.userStep;
 
-      if (step.action === 'enter') {
+      if (kbAction === 'enter') {
         input.value = el.inputValue || '<<value>>';
         if (el.placeholder) input.placeholder = el.placeholder;
       }
-      if (step.action === 'select') {
+      if (kbAction === 'select') {
         input.selectedText = el.selectedValue || el.inputValue || '<<value>>';
         if (step.dropdownParent) input.dropdownLabel = step.dropdownParent;
+      }
+      if (kbAction === 'click' && step.dropdownParent) {
+        input.dropdownLabel = step.dropdownParent;
       }
       if (step.identifiers?.id) input.elementId = step.identifiers.id;
       if (step.identifiers?.ariaLabel) input.ariaLabel = step.identifiers.ariaLabel;
 
       let output = '';
-      if (step.action === 'click') output = `Click the ${label} ${hType}.`;
-      else if (step.action === 'enter') output = `Enter <<${el.inputValue || 'value'}>> in the ${el.label || el.placeholder || 'input'} input field.`;
-      else if (step.action === 'select') output = `Select <<${el.selectedValue || el.inputValue || 'value'}>> from the ${step.dropdownParent || el.label || 'dropdown'} dropdown list.`;
+      if (kbAction === 'click') {
+        if (step.dropdownParent) {
+          output = `Click the ${label} button in ${step.dropdownParent}.`;
+        } else {
+          output = `Click the ${label} ${hType}.`;
+        }
+      } else if (kbAction === 'enter') {
+        output = `Enter <<${el.inputValue || 'value'}>> in the ${el.label || el.placeholder || 'input'} input field.`;
+      } else if (kbAction === 'select') {
+        const selectedVal = el.selectedValue || el.inputValue || 'value';
+        const parentCtx = step.dropdownParent || el.label || 'dropdown';
+        output = `Select ${selectedVal} from ${parentCtx}.`;
+      }
 
       const slug = (label || el.type || 'element').toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
       return { name: `${slug}_veeva`, input, output };
@@ -526,6 +601,16 @@
           if (step) this.toast.show(await this.state.addStep(step));
           return;
         }
+        if (DOMUtils.isNavbarItem(el)) {
+          // Navbar links (vv-navbar-link) → always a plain navigation click, never a dropdown select
+          const step = this.buildStep(el, 'click');
+          if (step) {
+            step.element.context = 'navbar';
+            step._kb = this.generateKBEntry(step);
+            this.toast.show(await this.state.addStep(step));
+          }
+          return;
+        }
         if (DOMUtils.isInsideVeevaDropdown(el)) {
           const text = DOMUtils.cleanText(el.innerText || el.textContent || '');
           if (text && !DOMUtils.isNoisy(text)) {
@@ -533,7 +618,8 @@
             if (step) {
               step.action = 'select';
               step.element.selectedValue = text;
-              step.dropdownParent = step.dropdownParent || DOMUtils.findNearbyLabel(el) || 'dropdown';
+              const ddCtx = DOMUtils.getDropdownContext(el);
+              step.dropdownParent = ddCtx || step.dropdownParent || DOMUtils.findNearbyLabel(el) || 'dropdown';
               step._kb = this.generateKBEntry(step);
               this.toast.show(await this.state.addStep(step));
               return;
@@ -611,12 +697,55 @@
           case 'GET_KB':
             sendResponse({ kb: state.steps.map(s => s._kb).filter(Boolean) });
             break;
+          case 'MEMORY_STORE': {
+            // Build a memory-store step — no recording check needed (user-initiated)
+            const storeStep = {
+              timestamp: new Date().toISOString(),
+              action: 'memory_store',
+              element: {
+                type: 'memory',
+                label: msg.varName,
+                inputValue: msg.value,
+              },
+              page: { url: window.location.href, title: document.title },
+            };
+            storeStep._kb = {
+              name: `memory_store_${msg.varName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_veeva`,
+              input: { action: 'memory_store', label: msg.varName, value: msg.value },
+              output: `Store the <<${msg.value}>> in the memory with the key <<${msg.varName}>>.`,
+            };
+            const added = await state.addStep(storeStep);
+            if (added) toast.show(added);
+            sendResponse({ ok: true, step: added });
+            break;
+          }
+          case 'MEMORY_FETCH': {
+            // Build a memory-fetch step
+            const fetchStep = {
+              timestamp: new Date().toISOString(),
+              action: 'memory_fetch',
+              element: {
+                type: 'memory',
+                label: msg.varName,
+              },
+              page: { url: window.location.href, title: document.title },
+            };
+            fetchStep._kb = {
+              name: `memory_fetch_${msg.varName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_veeva`,
+              input: { action: 'memory_fetch', label: msg.varName },
+              output: `Fetch the <<${msg.varName}>> value from the memory.`,
+            };
+            const fetched = await state.addStep(fetchStep);
+            if (fetched) toast.show(fetched);
+            sendResponse({ ok: true, step: fetched });
+            break;
+          }
         }
       } catch (e) {
         sendResponse({ error: e.message });
       }
     })();
-    return true; // Keep channel open for async response
+    return true;
   });
 
   const init = async () => {

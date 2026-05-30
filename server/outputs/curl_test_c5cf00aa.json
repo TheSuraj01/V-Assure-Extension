@@ -1,0 +1,28 @@
+{
+  "session_id": "curl_test_c5cf00aa",
+  "total_steps": 1,
+  "steps": [
+    {
+      "step": 1,
+      "name": "test_button_veeva",
+      "original_output": "Click on the 'Test Button' button.",
+      "enhanced_output": "Click Test Button button.",
+      "action": "click",
+      "label": "Test Button",
+      "value": null,
+      "userStep": null,
+      "rag_context_used": [
+        "Click the Continue button.",
+        "Click on the Search Button.",
+        "Click the Create button.",
+        "Click the Save button.",
+        "Click the Start button."
+      ],
+      "confidence": 1.0,
+      "validation_reason": "Label matched"
+    }
+  ],
+  "full_script": "1. Click Test Button button.",
+  "download_url": "/download/curl_test_c5cf00aa",
+  "model_used": "openai/meta-llama/Llama-3.1-8B-Instruct"
+}

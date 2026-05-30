@@ -198,6 +198,10 @@ function stepToKB(step) {
     output = `Take screenshot of the page.`;
   } else if (step.action === 'step_marker') {
     output = `Proceed to ${el.label}.`;
+  } else if (step.action === 'memory_store') {
+    output = `Store the <<${el.inputValue}>> in the memory with the key <<${el.label}>>.`;
+  } else if (step.action === 'memory_fetch') {
+    output = `Fetch the <<${el.label}>> value from the memory.`;
   }
 
   const slug = label.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
@@ -215,8 +219,8 @@ function allStepsToKB() {
 function highlight(obj) {
   return JSON.stringify(obj, null, 2)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/("[\w@\-\s]+")\s*:/g, '<span class="jk">$1</span>:')
-    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, (m, s) => m.replace(s, `<span class="js">${s}</span>`))
+    .replace(/(\"[\w@\-\s]+\")\s*:/g, '<span class="jk">$1</span>:')
+    .replace(/:\s*(\"(?:[^\"\\]|\\.)*\")/g, (m, s) => m.replace(s, `<span class="js">${s}</span>`))
     .replace(/:\s*(\d+\.?\d*)/g, (m, n) => m.replace(n, `<span class="jn">${n}</span>`))
     .replace(/:\s*(true|false|null)/g, (m, b) => m.replace(b, `<span class="jb">${b}</span>`));
 }
@@ -297,7 +301,7 @@ function download(filename, text) {
 }
 
 // Generate Prompts — Backend Integration
-const DEFAULT_BACKEND = 'http://127.0.0.1:8000'; // ENV
+const DEFAULT_BACKEND = 'http://127.0.0.1:8000';
 let generatedSessionId = null;
 let generatedSteps = [];
 
@@ -370,7 +374,6 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
 
       if (!res.ok) {
         const bodyText = await res.text().catch(() => res.statusText);
-        console.error('generate/stream non-ok response', res.status, bodyText);
         throw new Error(bodyText || res.statusText);
       }
 
@@ -400,17 +403,13 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
               break;
             }
             generatedSteps.push(evt);
-
             if (evt.action === 'step_marker') continue;
-
             if (evt.userStep && evt.userStep !== lastPrintedUserStep) {
               if (lastPrintedUserStep !== null) outputEl.textContent += '\n';
               outputEl.textContent += `${evt.userStep}:\n`;
               lastPrintedUserStep = evt.userStep;
             }
-
-            const line_ = `${evt.enhanced_output}`;
-            outputEl.textContent += line_ + '\n';
+            outputEl.textContent += `${evt.enhanced_output}\n`;
           } catch { }
         }
       }
@@ -426,14 +425,12 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
 
       if (!res.ok) {
         const bodyText = await res.text().catch(() => res.statusText);
-        console.error('generate non-ok response', res.status, bodyText);
         throw new Error(bodyText || res.statusText);
       }
 
       const data = await res.json();
       generatedSessionId = data.session_id;
       generatedSteps = data.steps || [];
-
       outputEl.textContent = data.full_script;
       outputEl.textContent += `\n\n✅ Session: ${data.session_id} | Model: ${data.model_used}`;
       dlBtn.style.display = 'flex';
@@ -442,8 +439,7 @@ document.getElementById('runGenBtn').addEventListener('click', async () => {
 
   } catch (err) {
     console.error('Generation error (popup)', err);
-    const details = err && (err.stack || err.message) ? `\n\n${err.stack || err.message}` : '';
-    outputEl.textContent = `❌ Error: ${err.message || 'network error'}${details}\n\nMake sure the backend is running at ${DEFAULT_BACKEND}`;
+    outputEl.textContent = `❌ Error: ${err.message || 'network error'}\n\nMake sure the backend is running at ${DEFAULT_BACKEND}`;
   } finally {
     runBtn.disabled = false;
   }
@@ -474,11 +470,13 @@ function copyText(text) {
   navigator.clipboard.writeText(text).then(() => showToast());
 }
 
-function showToast(msg = 'Copied!') {
+function showToast(msg = 'Copied!', color = 'var(--green)') {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.style.background = color;
+  t.style.color = (color === 'var(--green)') ? 'var(--bg)' : '#fff';
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 1600);
+  setTimeout(() => t.classList.remove('show'), 2200);
 }
 
 function escHtml(str) {
@@ -496,4 +494,157 @@ chrome.storage.local.get(['genModel'], (r) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────
+// Admin Sync Panel
+// ─────────────────────────────────────────────────────────────
+
+document.getElementById('toggleAdminBtn').addEventListener('click', () => {
+  const panel = document.getElementById('adminPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    document.getElementById('memoryPanel').classList.remove('open');
+  }
+});
+
+document.getElementById('adminSyncBtn').addEventListener('click', async () => {
+  const code = document.getElementById('adminCodeInput').value.trim();
+  const syncBtn = document.getElementById('adminSyncBtn');
+
+  if (!code) {
+    showToast('Enter the admin code first', 'var(--amber)');
+    return;
+  }
+
+  syncBtn.disabled = true;
+  syncBtn.textContent = 'Syncing…';
+
+  try {
+    const res = await fetch(`${DEFAULT_BACKEND}/admin/sync-templates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_code: code }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (res.status === 403) {
+      showToast('❌ Invalid admin code', 'var(--red)');
+      return;
+    }
+
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.statusText);
+      showToast(`❌ Sync failed: ${err}`, 'var(--red)');
+      return;
+    }
+
+    const data = await res.json();
+    showToast(`✅ Synced ${data.synced} templates`, 'var(--green)');
+    document.getElementById('adminCodeInput').value = '';
+    document.getElementById('adminPanel').classList.remove('open');
+
+  } catch (err) {
+    showToast(`❌ ${err.message || 'Network error'}`, 'var(--red)');
+  } finally {
+    syncBtn.disabled = false;
+    syncBtn.textContent = 'Sync Templates';
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// Memory Panel — Store & Fetch
+// ─────────────────────────────────────────────────────────────
+
+const MEMORY_KEY = 'veevaMemoryVars';
+
+document.getElementById('toggleMemoryBtn').addEventListener('click', () => {
+  const panel = document.getElementById('memoryPanel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    document.getElementById('adminPanel').classList.remove('open');
+    loadMemoryVars();
+  }
+});
+
+// Sub-tab switching
+document.getElementById('memTabStore').addEventListener('click', () => {
+  document.getElementById('memTabStore').classList.add('active');
+  document.getElementById('memTabFetch').classList.remove('active');
+  document.getElementById('memStoreContent').classList.add('active');
+  document.getElementById('memFetchContent').classList.remove('active');
+});
+
+document.getElementById('memTabFetch').addEventListener('click', () => {
+  document.getElementById('memTabFetch').classList.add('active');
+  document.getElementById('memTabStore').classList.remove('active');
+  document.getElementById('memFetchContent').classList.add('active');
+  document.getElementById('memStoreContent').classList.remove('active');
+  loadMemoryVars();
+});
+
+function loadMemoryVars() {
+  chrome.storage.local.get([MEMORY_KEY], (res) => {
+    const vars = res[MEMORY_KEY] || [];
+    const sel = document.getElementById('memVarSelect');
+    sel.innerHTML = '<option value="">— select a variable —</option>';
+    vars.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function saveMemoryVar(varName) {
+  chrome.storage.local.get([MEMORY_KEY], (res) => {
+    const vars = res[MEMORY_KEY] || [];
+    if (!vars.includes(varName)) {
+      vars.push(varName);
+      chrome.storage.local.set({ [MEMORY_KEY]: vars });
+    }
+  });
+}
+
+// Memory Store button
+document.getElementById('memStoreBtn').addEventListener('click', async () => {
+  const value = document.getElementById('memValue').value.trim();
+  const varName = document.getElementById('memVarName').value.trim();
+
+  if (!value || !varName) {
+    showToast('Fill both fields', 'var(--amber)');
+    return;
+  }
+
+  const res = await msgTab('MEMORY_STORE', { value, varName });
+  if (res && res.ok) {
+    saveMemoryVar(varName);
+    showToast(`\uD83E\uDDE0 Stored: ${varName}`, 'var(--green)');
+    document.getElementById('memValue').value = '';
+    document.getElementById('memVarName').value = '';
+    await syncState();
+  } else {
+    showToast('Start recording first', 'var(--amber)');
+  }
+});
+
+// Memory Fetch button
+document.getElementById('memFetchBtn').addEventListener('click', async () => {
+  const varName = document.getElementById('memVarSelect').value;
+
+  if (!varName) {
+    showToast('Select a variable first', 'var(--amber)');
+    return;
+  }
+
+  const res = await msgTab('MEMORY_FETCH', { varName });
+  if (res && res.ok) {
+    showToast(`\uD83D\uDCE4 Fetched: ${varName}`, 'var(--cyan)');
+    await syncState();
+  } else {
+    showToast('Start recording first', 'var(--amber)');
+  }
+});
+
+// Initial load
+loadMemoryVars();
 syncState();

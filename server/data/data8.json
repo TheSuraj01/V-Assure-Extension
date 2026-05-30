@@ -1,0 +1,151 @@
+[
+    {
+        "name": "click_navbar_logs_veeva",
+        "input": {
+            "action": "click",
+            "label": "Logs"
+        },
+        "output": "Click on Logs from the navbar."
+    },
+    {
+        "name": "click_navbar_users_groups_veeva",
+        "input": {
+            "action": "click",
+            "label": "Users & Groups"
+        },
+        "output": "Click on Users & Groups from the navbar."
+    },
+    {
+        "name": "click_navbar_configuration_veeva",
+        "input": {
+            "action": "click",
+            "label": "Configuration"
+        },
+        "output": "Click on Configuration from the navbar."
+    },
+    {
+        "name": "click_navbar_operations_veeva",
+        "input": {
+            "action": "click",
+            "label": "Operations"
+        },
+        "output": "Click on Operations from the navbar."
+    },
+    {
+        "name": "click_navbar_deployment_veeva",
+        "input": {
+            "action": "click",
+            "label": "Deployment"
+        },
+        "output": "Click on Deployment from the navbar."
+    },
+    {
+        "name": "click_navbar_connections_veeva",
+        "input": {
+            "action": "click",
+            "label": "Connections"
+        },
+        "output": "Click on Connections from the navbar."
+    },
+    {
+        "name": "click_navbar_settings_veeva",
+        "input": {
+            "action": "click",
+            "label": "Settings"
+        },
+        "output": "Click on Settings from the navbar."
+    },
+    {
+        "name": "click_navbar_about_veeva",
+        "input": {
+            "action": "click",
+            "label": "About"
+        },
+        "output": "Click on About from the navbar."
+    },
+    {
+        "name": "click_navbar_document_types_veeva",
+        "input": {
+            "action": "click",
+            "label": "Document Types"
+        },
+        "output": "Click on Document Types from the navbar."
+    },
+    {
+        "name": "click_navbar_objects_veeva",
+        "input": {
+            "action": "click",
+            "label": "Objects"
+        },
+        "output": "Click on Objects from the navbar."
+    },
+    {
+        "name": "click_tab_collections_button_veeva",
+        "input": {
+            "action": "click",
+            "label": "Tab Collections",
+            "ariaLabel": "Tab Collections"
+        },
+        "output": "Click on the Tab Collections button."
+    },
+    {
+        "name": "select_admin_tab_collection_veeva",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "Admin",
+            "dropdownLabel": "Tab Collections"
+        },
+        "output": "Select Admin from Tab Collections."
+    },
+    {
+        "name": "select_business_admin_tab_collection_veeva",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "Business Admin",
+            "dropdownLabel": "Tab Collections"
+        },
+        "output": "Select Business Admin from Tab Collections."
+    },
+    {
+        "name": "select_all_tab_collection_veeva",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "All",
+            "dropdownLabel": "Tab Collections"
+        },
+        "output": "Select All from Tab Collections."
+    },
+    {
+        "name": "select_clinical_admin_tab_collection_veeva",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "Clinical Admin",
+            "dropdownLabel": "Tab Collections"
+        },
+        "output": "Select Clinical Admin from Tab Collections."
+    },
+    {
+        "name": "select_quality_admin_tab_collection_veeva",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "Quality Admin",
+            "dropdownLabel": "Tab Collections"
+        },
+        "output": "Select Quality Admin from Tab Collections."
+    },
+    {
+        "name": "select_regulatory_admin_tab_collection_veeva",
+        "input": {
+            "action": "select",
+            "label": "Tab Collections",
+            "selectedText": "Regulatory Admin",
+            "dropdownLabel": "Tab Collections"
+        },
+        "output": "Select Regulatory Admin from Tab Collections."
+    }
+]

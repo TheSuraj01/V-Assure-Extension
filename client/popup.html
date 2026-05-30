@@ -30,11 +30,8 @@
     }
 
     body {
-      width: 100%;
-      min-width: 400px;
-      max-width: 800px;
-      min-height: 240px;
-      max-height: 620px;
+      width: 420px;
+      height: 550px;
       background: var(--bg);
       color: var(--text);
       font-family: 'Outfit', sans-serif;
@@ -115,31 +112,34 @@
 
     /* ── Controls ── */
     .controls {
-      padding: 10px 16px;
+      padding: 8px 12px;
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       border-bottom: 1px solid var(--border);
       background: var(--s2);
+      flex-shrink: 0;
     }
 
     .btn {
       flex: 1;
-      padding: 7px 0;
+      min-width: 60px;
+      padding: 6px 4px;
       border-radius: 7px;
       border: 1px solid var(--border2);
       background: transparent;
       color: var(--text);
       font-family: 'Outfit', sans-serif;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
       transition: all 0.15s;
       letter-spacing: 0.01em;
+      white-space: nowrap;
     }
 
     .btn:hover {
@@ -202,15 +202,16 @@
 
     /* ── Status bar ── */
     .statusbar {
-      padding: 6px 16px;
+      padding: 5px 12px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       background: var(--bg);
       border-bottom: 1px solid var(--border);
       font-family: 'IBM Plex Mono', monospace;
       font-size: 10px;
       color: var(--muted2);
+      flex-shrink: 0;
     }
 
     .status-badge {
@@ -248,10 +249,11 @@
     .filters {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      padding: 8px 16px;
+      gap: 5px;
+      padding: 6px 12px;
       border-bottom: 1px solid var(--border);
       background: var(--s1);
+      flex-shrink: 0;
     }
 
     .chip {
@@ -276,7 +278,10 @@
     .list {
       flex: 1;
       overflow-y: auto;
-      padding: 6px 0;
+      overflow-x: hidden;
+      padding: 4px 0;
+      min-height: 0;
+      /* critical for flex child scrolling */
     }
 
     .list::-webkit-scrollbar {
@@ -432,27 +437,32 @@
 
     /* ── Footer ── */
     .footer {
-      padding: 8px 16px;
+      padding: 6px 10px;
       background: var(--s2);
       border-top: 1px solid var(--border);
       display: flex;
-      gap: 8px;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+      flex-shrink: 0;
     }
 
     .footer-btn {
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: 6px;
       border: 1px solid var(--border2);
       background: transparent;
       color: var(--muted2);
       font-family: 'Outfit', sans-serif;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.12s;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .footer-btn:hover {
@@ -471,6 +481,7 @@
       background: var(--bg);
       flex-direction: column;
       z-index: 20;
+      overflow: hidden;
     }
 
     .panel.open {
@@ -478,12 +489,13 @@
     }
 
     .panel-header {
-      padding: 11px 16px;
+      padding: 8px 12px;
       background: var(--s1);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .panel-title {
@@ -499,7 +511,9 @@
     .panel-body {
       flex: 1;
       overflow-y: auto;
-      padding: 14px;
+      overflow-x: hidden;
+      padding: 10px 12px;
+      min-height: 0;
     }
 
     .panel-body::-webkit-scrollbar {
@@ -569,6 +583,7 @@
       background: var(--bg);
       flex-direction: column;
       z-index: 30;
+      overflow: hidden;
     }
 
     .overlay.open {
@@ -576,21 +591,23 @@
     }
 
     .overlay-header {
-      padding: 12px 16px;
+      padding: 9px 12px;
       background: var(--s1);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .groq-config {
-      padding: 14px 16px;
+      padding: 10px 12px;
       border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
     .field-group {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .field-label {
@@ -626,7 +643,9 @@
     .output-area {
       flex: 1;
       overflow-y: auto;
-      padding: 14px;
+      overflow-x: hidden;
+      padding: 10px 12px;
+      min-height: 0;
     }
 
     .output-area::-webkit-scrollbar {
@@ -696,6 +715,235 @@
     .toast.show {
       opacity: 1;
     }
+
+    /* ── Admin Sync Panel ── */
+    .admin-panel {
+      border-top: 1px solid var(--border);
+      background: var(--s1);
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+      max-height: 0;
+      flex-shrink: 0;
+    }
+
+    .admin-panel.open {
+      max-height: 56px;
+    }
+
+    .admin-panel-inner {
+      padding: 6px 12px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .admin-input {
+      flex: 1;
+      padding: 6px 10px;
+      background: var(--s2);
+      border: 1px solid var(--amber);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      outline: none;
+    }
+
+    .admin-input:focus {
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+    }
+
+    .admin-input::placeholder {
+      color: var(--muted);
+    }
+
+    .btn-admin-sync {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--amber);
+      background: rgba(245, 158, 11, 0.10);
+      color: var(--amber);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-admin-sync:hover {
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .btn-admin-sync:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── Memory Panel ── */
+    .memory-panel {
+      border-top: 1px solid var(--border);
+      background: var(--s1);
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      max-height: 0;
+      flex-shrink: 0;
+    }
+
+    .memory-panel.open {
+      max-height: 120px;
+    }
+
+    .mem-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .mem-tab {
+      flex: 1;
+      padding: 6px 0;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted2);
+      font-family: 'Outfit', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mem-tab.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+    }
+
+    .mem-tab-content {
+      display: none;
+      padding: 6px 12px;
+      gap: 5px;
+      flex-direction: column;
+    }
+
+    .mem-tab-content.active {
+      display: flex;
+    }
+
+    .mem-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .mem-input {
+      flex: 1;
+      padding: 5px 8px;
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      outline: none;
+    }
+
+    .mem-input:focus {
+      border-color: var(--cyan);
+    }
+
+    .mem-input::placeholder {
+      color: var(--muted);
+    }
+
+    .mem-select {
+      flex: 1;
+      padding: 5px 8px;
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .mem-select:focus {
+      border-color: var(--cyan);
+    }
+
+    .btn-mem {
+      padding: 5px 12px;
+      border-radius: 5px;
+      border: 1px solid var(--cyan);
+      background: rgba(34, 211, 238, 0.10);
+      color: var(--cyan);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .btn-mem:hover {
+      background: rgba(34, 211, 238, 0.2);
+    }
+
+    .btn-mem:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Memory action pills */
+    .action-pill.memory_store {
+      background: rgba(192, 132, 252, 0.12);
+      color: #c084fc;
+      border: 1px solid rgba(192, 132, 252, 0.25);
+    }
+
+    .action-pill.memory_fetch {
+      background: rgba(34, 211, 238, 0.12);
+      color: var(--cyan);
+      border: 1px solid rgba(34, 211, 238, 0.25);
+    }
+
+    /* Toggle buttons in footer area */
+    .btn-toggle-admin {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--amber);
+      background: transparent;
+      color: var(--amber);
+      font-family: 'Outfit', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-toggle-admin:hover {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .btn-toggle-memory {
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--cyan);
+      background: transparent;
+      color: var(--cyan);
+      font-family: 'Outfit', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-toggle-memory:hover {
+      background: rgba(34, 211, 238, 0.08);
+    }
   </style>
 </head>
 
@@ -742,11 +990,50 @@
     </div>
   </div>
 
+  <!-- Memory Panel -->
+  <div class="memory-panel" id="memoryPanel">
+    <div class="mem-tabs">
+      <button class="mem-tab active" id="memTabStore">🧠 Store</button>
+      <button class="mem-tab" id="memTabFetch">📤 Fetch</button>
+    </div>
+
+    <!-- Store Tab -->
+    <div class="mem-tab-content active" id="memStoreContent">
+      <div class="mem-row">
+        <input class="mem-input" type="text" id="memValue" placeholder="Enter value to store" />
+        <input class="mem-input" type="text" id="memVarName" placeholder="Variable name" style="max-width:130px;" />
+        <button class="btn-mem" id="memStoreBtn">Store</button>
+      </div>
+    </div>
+
+    <!-- Fetch Tab -->
+    <div class="mem-tab-content" id="memFetchContent">
+      <div class="mem-row">
+        <select class="mem-select" id="memVarSelect">
+          <option value="">— select a variable —</option>
+        </select>
+        <button class="btn-mem" id="memFetchBtn">Fetch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Sync Panel -->
+  <div class="admin-panel" id="adminPanel">
+    <div class="admin-panel-inner">
+      <span style="font-size:10px;color:var(--amber);font-weight:700;white-space:nowrap;">⚙ Admin</span>
+      <input class="admin-input" type="password" id="adminCodeInput" placeholder="Enter admin code" />
+      <button class="btn-admin-sync" id="adminSyncBtn">Sync Templates</button>
+    </div>
+  </div>
+
   <!-- Footer -->
-  <div class="footer" style="flex-wrap: wrap;">
+  <div class="footer" style="flex-wrap:wrap;">
     <button class="footer-btn" id="exportRawBtn">⬇ Raw JSON</button>
     <button class="footer-btn" id="exportKbBtn">⬇ KB JSON</button>
-    <button class="footer-btn" id="downloadMainBtn" style="display:none;color:var(--cyan);border-color:var(--cyan);">⬇ Prompts</button>
+    <button class="footer-btn" id="downloadMainBtn" style="display:none;color:var(--cyan);border-color:var(--cyan);">⬇
+      Prompts</button>
+    <button class="btn-toggle-memory" id="toggleMemoryBtn" title="Memory Store / Fetch">🧠 Memory</button>
+    <button class="btn-toggle-admin" id="toggleAdminBtn" title="Admin Sync">⚙</button>
     <button class="footer-btn" id="clearBtn" style="margin-left:auto;color:var(--red);">✕ Clear</button>
   </div>
 
@@ -772,19 +1059,18 @@
     </div>
 
     <div class="groq-config">
-      <!-- Backend Health Status (URL handled by backend) -->
-      <div class="field-group">
-        <div id="healthStatus"
-          style="font-size:10px;color:var(--muted2);margin-top:4px;font-family:'IBM Plex Mono',monospace;">
-          ● Checking backend...
-        </div>
-      </div>
+      <!-- Backend Health -->
+      <div style="font-size:10px;color:var(--muted2);margin-bottom:6px;font-family:'IBM Plex Mono',monospace;"
+        id="healthStatus">● Checking backend...</div>
 
-      <!-- Row 2: Model Selection -->
-      <div style="display:flex;gap:10px;">
-        <div class="field-group" style="flex:1;">
-          <div class="field-label">Model</div>
-          <select class="input" id="modelSelect" style="cursor:pointer;">
+      <!-- Model + Session row -->
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:6px;">
+        <div style="flex:1;">
+          <div class="field-label" style="margin-bottom:3px;">Model</div>
+          <select class="input" id="modelSelect" style="cursor:pointer;padding:5px 8px;font-size:10px;">
+            <optgroup label="Local Server">
+              <option value="local|openai/meta-llama/Llama-3.1-8B-Instruct" selected>LLaMA 3.1 8B Instruct</option>
+            </optgroup>
             <optgroup label="Groq">
               <option value="groq|llama-3.3-70b-versatile">LLAMA Versatile</option>
               <option value="groq|llama-3.1-8b-instant">LLAMA Instant</option>
@@ -792,34 +1078,24 @@
             <optgroup label="AWS Bedrock">
               <option value="bedrock|anthropic.claude-3-5-sonnet-20240620-v1:0">Claude 3.5 Sonnet</option>
             </optgroup>
-            <optgroup label="Local (BHDC)">
-              <option value="local|llama-3.3-70b-versatile">LLaMA Versatile (Local BHDS)</option>
-            </optgroup>
           </select>
         </div>
-      </div>
-
-      <!-- API configuration handled by backend -->
-
-      <!-- Row 3: session name + toggles -->
-      <div style="display:flex;gap:10px;align-items:flex-end;">
-        <div class="field-group" style="flex:1;">
-          <div class="field-label">Session Name (optional)</div>
-          <input class="input" type="text" id="sessionName" placeholder="e.g. clinical_user_create" />
+        <div style="flex:1;">
+          <div class="field-label" style="margin-bottom:3px;">Session Name</div>
+          <input class="input" type="text" id="sessionName" placeholder="e.g. clinical_create"
+            style="padding:5px 8px;font-size:10px;" />
         </div>
-        <div style="display:flex;gap:12px;padding-bottom:2px;">
-          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:var(--muted2);">
-            <input type="checkbox" id="useStream" checked style="accent-color:var(--cyan);" />
-            Stream
+        <div style="display:flex;gap:10px;padding-bottom:2px;flex-shrink:0;">
+          <label style="display:flex;align-items:center;gap:4px;font-size:10px;cursor:pointer;color:var(--muted2);">
+            <input type="checkbox" id="useStream" checked style="accent-color:var(--cyan);" /> Stream
           </label>
-          <label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer;color:var(--muted2);">
-            <input type="checkbox" id="useRag" checked style="accent-color:var(--cyan);" />
-            RAG
+          <label style="display:flex;align-items:center;gap:4px;font-size:10px;cursor:pointer;color:var(--muted2);">
+            <input type="checkbox" id="useRag" checked style="accent-color:var(--cyan);" /> RAG
           </label>
         </div>
       </div>
 
-      <button class="btn generate" id="runGenBtn" style="flex:0;width:100%;margin-top:6px;">
+      <button class="btn generate" id="runGenBtn" style="flex:0;width:100%;">
         ⚡ Run Generation
       </button>
     </div>

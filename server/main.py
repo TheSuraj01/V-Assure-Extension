@@ -36,6 +36,7 @@ from services.excel_validator import (
 )
 
 from services.google_sheets_service import GoogleSheetsService
+from services import mongodb_service
 from config.config_loader import reload_config, get_config
 
 load_dotenv()
@@ -263,46 +264,69 @@ async def lifespan(app: FastAPI):
     # Initialize RAG
     init_rag()
 
-    # ── Google Sheets: first load at startup ────────────────────────────
-    # Download the step-pattern template into memory once on boot.
-    # No file is written to disk.
-    google_sharing_link = os.getenv("GOOGLE_SHARING_LINK", "").strip()
+    # ── Step-pattern templates: MongoDB-first strategy ──────────────────
+    # 1. Try loading from MongoDB (fast path — no network download).
+    # 2. If MongoDB is empty (first run), fall back to Google Sheets,
+    #    then upsert the parsed patterns into MongoDB for next time.
+    # 3. If Google Sheets is also unavailable, fall back to local disk/JSON.
 
-    startup_bytes = None
+    logger.info("=" * 70)
+    logger.info("TEMPLATE INITIALIZATION")
+    logger.info("=" * 70)
 
-    if google_sharing_link:
+    mongo_patterns = await mongodb_service.load_patterns()
+
+    if mongo_patterns:
         logger.info(
-            "Startup: Downloading Google Sheets template into memory | %s",
-            google_sharing_link,
+            "Startup: Loaded %s templates from MongoDB (fast path)",
+            len(mongo_patterns),
         )
-        try:
-            startup_bytes = GoogleSheetsService.download_sheet_as_bytes(
-                sharing_url=google_sharing_link,
-            )
-            logger.info("Startup: Google Sheet loaded into memory successfully")
-        except Exception as _exc:
-            logger.warning(
-                "Startup: Google Sheets download failed, "
-                "will use local disk cache or JSON fallback | %s",
-                _exc,
-            )
+        # Register directly into runtime cache — no Excel download needed
+        from config.config_loader import get_config as _gc
+        _gc().set_runtime_cache("dynamic_templates", mongo_patterns)
     else:
         logger.info(
-            "Startup: GOOGLE_SHARING_LINK not set — skipping template download"
+            "Startup: MongoDB empty — fetching templates from Google Sheets"
         )
 
-    # Parse patterns from the downloaded bytes (or fallback to disk/JSON)
-    init_dynamic_patterns(startup_bytes)
+        google_sharing_link = os.getenv("GOOGLE_SHARING_LINK", "").strip()
+        startup_bytes = None
 
-    logger.info(
-        "Application startup completed successfully"
-    )
+        if google_sharing_link:
+            try:
+                startup_bytes = GoogleSheetsService.download_sheet_as_bytes(
+                    sharing_url=google_sharing_link,
+                )
+                logger.info("Startup: Google Sheet downloaded into memory")
+            except Exception as _exc:
+                logger.warning(
+                    "Startup: Google Sheets download failed | %s", _exc
+                )
+        else:
+            logger.info(
+                "Startup: GOOGLE_SHARING_LINK not set — skipping Sheet download"
+            )
+
+        # Parse & register patterns (in-memory or disk/JSON fallback)
+        init_dynamic_patterns(startup_bytes)
+
+        # If we got patterns from the Sheet, persist them to MongoDB
+        if startup_bytes is not None:
+            cached = get_config().get_runtime_cache("dynamic_templates", {})
+            if cached:
+                synced = await mongodb_service.upsert_patterns(cached)
+                logger.info(
+                    "Startup: Persisted %s templates to MongoDB", synced
+                )
+
+    logger.info("Application startup completed successfully")
 
     yield
 
     logger.info("=" * 70)
     logger.info("APPLICATION SHUTDOWN")
     logger.info("=" * 70)
+    await mongodb_service.close()
 
 
 app = FastAPI(
@@ -585,37 +609,74 @@ async def health():
     )
 
 
-async def _run_sheet_sync() -> None:
+class AdminSyncRequest(BaseModel):
+    """Body for the admin template-sync endpoint."""
+    admin_code: str
+
+
+@app.post("/admin/sync-templates")
+async def admin_sync_templates(
+    req: AdminSyncRequest,
+):
     """
-    Downloads the latest Google Sheet into memory and refreshes the
-    runtime pattern cache. Called at the start of every /generate request
-    so templates are always up-to-date with the sheet.
-    Fails silently — generation continues with the last-known-good cache.
+    Admin-only endpoint.
+
+    - Validates the admin code against ADMIN_SYNC_CODE env var.
+    - Downloads the latest Google Sheet into memory.
+    - Parses the step-pattern templates from the sheet.
+    - Upserts all patterns into MongoDB.
+    - Refreshes the in-process runtime cache.
+
+    Returns the count of synced patterns.
     """
     global config
+
+    expected_code = os.getenv("ADMIN_SYNC_CODE", "").strip()
+
+    if not expected_code or req.admin_code.strip() != expected_code:
+        logger.warning("Admin sync attempt with invalid code")
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid admin code",
+        )
 
     google_sharing_link = os.getenv("GOOGLE_SHARING_LINK", "").strip()
 
     if not google_sharing_link:
-        return
+        raise HTTPException(
+            status_code=503,
+            detail="GOOGLE_SHARING_LINK not configured on the server",
+        )
 
     try:
+        logger.info("Admin sync: downloading Google Sheet into memory")
         sheet_bytes = GoogleSheetsService.download_sheet_as_bytes(
             sharing_url=google_sharing_link,
         )
-
-        logger.info("Sheet sync: Google Sheet loaded into memory")
-
-        config = reload_config()
-        init_dynamic_patterns(sheet_bytes)
-
-        logger.info("Sheet sync: templates reloaded into active cache")
-
     except Exception as exc:
-        logger.warning(
-            "Sheet sync failed (keeping current cache): %s",
-            exc,
+        logger.exception("Admin sync: Google Sheets download failed")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to download Google Sheet: {exc}",
         )
+
+    # Reload config and re-parse patterns from the sheet bytes
+    config = reload_config()
+    init_dynamic_patterns(sheet_bytes)
+
+    # Upsert freshly parsed patterns into MongoDB
+    cached = get_config().get_runtime_cache("dynamic_templates", {})
+    synced = await mongodb_service.upsert_patterns(cached)
+
+    logger.info(
+        "Admin sync complete | synced=%s templates into MongoDB", synced
+    )
+
+    return {
+        "status": "ok",
+        "synced": synced,
+        "message": f"{synced} templates synced to MongoDB and runtime cache refreshed",
+    }
 
 
 @app.post(
@@ -625,9 +686,6 @@ async def _run_sheet_sync() -> None:
 async def generate(
     req: GenerateRequest,
 ):
-
-    # Sync latest templates from Google Sheets before generating
-    await _run_sheet_sync()
 
     if not req.entries:
         raise HTTPException(
@@ -737,9 +795,6 @@ async def generate(
 async def generate_stream(
     req: GenerateRequest,
 ):
-
-    # Sync latest templates from Google Sheets before generating
-    await _run_sheet_sync()
 
     if not req.entries:
         raise HTTPException(

@@ -411,6 +411,7 @@ def build_enhanced_prompt(
     previous_steps: List[str],
     dynamic_examples: Optional[List[str]] = None,
     context_summary: str = "",
+    template_string: Optional[str] = None,
 ) -> str:
     prompt_config = get_prompt_config()
     inp = entry.input
@@ -466,8 +467,27 @@ def build_enhanced_prompt(
         context_section = f"\nCONTEXT SUMMARY:\n{context_summary}\n"
 
     critical_rules = "\n".join(prompt_config.get("critical_rules", []))
+    system_instruction = prompt_config.get(
+        "system_instruction", 
+        "You are an expert Veeva Vault test automation engineer. Your task is to convert a UI interaction into ONE precise, professional test step."
+    )
 
-    system_instruction = prompt_config.get("system_instruction", "You are an expert Veeva Vault test automation engineer. Your task is to convert a UI interaction into ONE precise, professional test step.")
+    # Pre-substitute actual values into the draft so the LLM never sees
+    # literal placeholders like {value} or <<value>>.
+    draft = entry.output or ""
+    subst = {
+        "value":  inp.value or "",
+        "label":  inp.label or "",
+        "option": inp.selectedText or "",
+    }
+    for k, v in subst.items():
+        if v:
+            draft = draft.replace(f"{{{k}}}", v)
+            draft = draft.replace(f"<<{k}>>", v)
+
+    format_section = ""
+    if template_string:
+        format_section = f"\nREQUIRED TEMPLATE FORMAT:\n{template_string}\n"
 
     prompt = f"""{system_instruction}
 
@@ -476,11 +496,12 @@ CRITICAL RULES (violating ANY rule = failure):
 {context_section}
 {dynamic_section}
 {examples_section}
+{format_section}
 {prev_section}
 CURRENT INTERACTION:
 {interaction_block}
 DRAFT (may be inaccurate or poorly formatted):
-{entry.output}
+{draft}
 YOUR TASK: Generate ONE perfect test step following all rules above.
 OUTPUT (one sentence only, no prefix, no explanation):""".strip()
 
@@ -686,6 +707,7 @@ async def generate_single_step(
         rag_examples=rag_examples,
         previous_steps=previous_steps,
         dynamic_examples=dynamic_examples,
+        template_string=template_result,
     )
 
     generation_config = (

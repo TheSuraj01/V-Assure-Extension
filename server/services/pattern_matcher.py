@@ -157,7 +157,7 @@ class DynamicPatternMatcher:
 
             return action_matches[0]
 
-        logger.warning(
+        logger.debug(
             "No dynamic template matched | action=%s | template_key=%s",
             action,
             template_key,
@@ -195,6 +195,8 @@ class DynamicPatternMatcher:
         if template:
             template = (
                 template
+                .replace("<<{", "{")
+                .replace("}>>", "}")
                 .replace("<<", "{")
                 .replace(">>", "}")
             )
@@ -304,7 +306,7 @@ class DynamicPatternMatcher:
 
             return template
 
-        logger.warning(
+        logger.debug(
             "No template found | action=%s | template_key=%s",
             action,
             template_key,

@@ -2,20 +2,28 @@
   VEEVA VAULT TEST AUTOMATION SCRIPT
 ======================================================================
 
-Session ID    : ad341324
-Generated     : 2026-05-11 22:08:56
-Model Used    : llama-3.3-70b-versatile
-Total Steps   : 0
+Session ID    : curl_test_c5cf00aa
+Generated     : 2026-05-30 12:43:07
+Model Used    : openai/meta-llama/Llama-3.1-8B-Instruct
+Total Steps   : 1
 
 ======================================================================
 TEST STEPS
 ======================================================================
 
+1. Click Test Button button.
 
 ======================================================================
 DETAILED STEP INFORMATION
 ======================================================================
 
+Step 1: test_button_veeva
+  Action       : click
+  Label        : Test Button
+  Original     : Click on the 'Test Button' button.
+  Enhanced     : Click Test Button button.
+  RAG Examples : 5 retrieved
+
 ======================================================================
-End of test script - ad341324
+End of test script - curl_test_c5cf00aa
 ======================================================================

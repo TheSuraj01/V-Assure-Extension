@@ -1,0 +1,17 @@
+{
+  "entries": [
+    {
+      "name": "test_button_veeva",
+      "input": {
+        "action": "click",
+        "label": "Test Button"
+      },
+      "output": "Click on the 'Test Button' button."
+    }
+  ],
+  "model": "openai/meta-llama/Llama-3.1-8B-Instruct",
+  "provider": "local",
+  "temperature": 0.15,
+  "use_rag": true,
+  "session_name": "curl_test"
+}
