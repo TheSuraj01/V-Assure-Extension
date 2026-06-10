@@ -1,0 +1,36 @@
+# Python cache files
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Local environment and secrets
+.env
+.env.*
+*.pem
+*.key
+config.enc
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Runtime outputs and local database files
+outputs/*.json
+outputs/*.txt
+outputs/*.xlsx
+data/*.json
+patterns_cache.json
+
+# Local logs and temporary files
+*.log
+*.tmp
+*.bak
+*.orig

@@ -5,19 +5,55 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-# ─────────────────────────────────────────────────────────────
-# Logger
-# ─────────────────────────────────────────────────────────────
+import re as _re
+
+
+# Patterns that should never appear in log output
+_SENSITIVE_PATTERNS = [
+    _re.compile(r"(gsk_)[A-Za-z0-9]{20,}", _re.IGNORECASE),
+    _re.compile(r"(sk-)[A-Za-z0-9\-]{20,}", _re.IGNORECASE),
+    _re.compile(r"(AKIA)[A-Z0-9]{16}", _re.IGNORECASE),
+    _re.compile(r"(mongodb\+srv://)[^\s]+", _re.IGNORECASE),
+    _re.compile(r"(password\s*[=:]\s*)\S+", _re.IGNORECASE),
+    _re.compile(r"(secret[_\s]*key\s*[=:]\s*)\S+", _re.IGNORECASE),
+]
+
+
+class _SensitiveFilter(logging.Filter):
+    """Filter that redacts sensitive patterns from log messages."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            for pattern in _SENSITIVE_PATTERNS:
+                record.msg = pattern.sub(
+                    lambda m: m.group(1) + "***REDACTED***",
+                    record.msg,
+                )
+        return True
+
 
 def setup_logger(
     name: str,
-    level: int = logging.INFO,
+    level: int = None,
 ) -> logging.Logger:
+    """
+    Configure and return a production-safe logger.
+
+    Log level priority:
+    1. Explicit `level` parameter
+    2. LOG_LEVEL environment variable
+    3. Default: INFO
+    """
+    import os
 
     logger = logging.getLogger(name)
 
     if logger.handlers:
         return logger
+
+    if level is None:
+        env_level = os.getenv("LOG_LEVEL", "INFO").upper()
+        level = getattr(logging, env_level, logging.INFO)
 
     logger.setLevel(level)
 
@@ -27,9 +63,9 @@ def setup_logger(
 
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
+    stream_handler.addFilter(_SensitiveFilter())
 
     logger.addHandler(stream_handler)
-
     logger.propagate = False
 
     return logger

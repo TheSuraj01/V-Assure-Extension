@@ -95,6 +95,10 @@ async def safe_acompletion(
     provider = kwargs.get("custom_llm_provider")
     api_key = kwargs.get("api_key")
 
+    if provider == "local":
+        kwargs["custom_llm_provider"] = "openai"
+        provider = "openai"
+
     if provider and provider != "bedrock" and "/" not in model_name:
         kwargs["model"] = f"{provider}/{model_name}"
 
@@ -153,11 +157,11 @@ async def safe_acompletion(
             )
 
             if not retryable:
-                logger.error(f"Non-retryable error: {exc}")
+                logger.error("Non-retryable error: %s", exc)
                 raise
 
             if attempt == max_retries - 1:
-                logger.error(f"Max retries ({max_retries}) exceeded for {model_name}")
+                logger.error("Max retries (%s) exceeded for %s", max_retries, model_name)
                 raise
 
             wait_time = default_wait_time
@@ -177,7 +181,8 @@ async def safe_acompletion(
                 wait_time = (retry_backoff_base**attempt) * default_wait_time
 
             logger.warning(
-                f"Rate limit hit for {model_name}. Retrying in {wait_time:.2f}s (Attempt {attempt + 1}/{max_retries})"
+                "Rate limit hit for %s. Retrying in %.2fs (Attempt %d/%d)",
+                model_name, wait_time, attempt + 1, max_retries,
             )
 
             await asyncio.sleep(wait_time)
@@ -295,6 +300,10 @@ def validate_output(
         )
     )
 
+    # RAG/template compatibility: for select actions, also allow enter action verbs (e.g. "Enter...")
+    if action.lower() == "select":
+        expected_verbs = expected_verbs + ACTION_VERBS.get("enter", [])
+
     for verb in expected_verbs:
 
         if text.startswith(verb):
@@ -310,13 +319,25 @@ def validate_output(
         )
 
     for forbidden in FORBIDDEN_WORDS:
-
-        if forbidden.lower() in text_lower:
-            return (
-                False,
-                0.0,
-                f"Forbidden word: {forbidden}",
-            )
+        term = forbidden.strip().lower()
+        if not term:
+            continue
+        # Use word boundaries for alphabetic/alphanumeric forbidden terms to prevent partial matching (e.g. "list" matching "li")
+        if term.isalnum():
+            pattern = rf"\b{re.escape(term)}\b"
+            if re.search(pattern, text_lower):
+                return (
+                    False,
+                    0.0,
+                    f"Forbidden word: {forbidden}",
+                )
+        else:
+            if term in text_lower:
+                return (
+                    False,
+                    0.0,
+                    f"Forbidden word: {forbidden}",
+                )
 
     label_lower = label.lower()
 
@@ -412,7 +433,20 @@ def build_enhanced_prompt(
     dynamic_examples: Optional[List[str]] = None,
     context_summary: str = "",
     template_string: Optional[str] = None,
+    is_navbar: bool = False,
 ) -> str:
+    """
+    Build the LLM prompt for a single step generation.
+
+    When is_navbar=True this function is NOT called — the caller returns
+    the deterministic navbar output directly.  The parameter is kept as
+    a guard in case the function is invoked directly elsewhere.
+    """
+    if is_navbar:
+        # Should have been short-circuited before reaching here, but
+        # return a safe deterministic value just in case.
+        return f"Click on {entry.input.label} from navbar."
+
     prompt_config = get_prompt_config()
     inp = entry.input
 
@@ -434,7 +468,21 @@ def build_enhanced_prompt(
 
     interaction_block = "\n".join(interaction_lines)
 
-    examples_section = ""
+    # ── RAG examples — mandatory context, not optional hints ────────────
+    mandatory_context_section = ""
+    if rag_examples:
+        examples_text = "\n".join(
+            f"{i + 1}. {example}"
+            for i, example in enumerate(rag_examples)
+        )
+        mandatory_context_section = (
+            "\nMANDATORY CONTEXT FROM KNOWLEDGE BASE:\n"
+            "The following examples are verified, authoritative outputs from the "
+            "same system. Your output MUST follow the exact same phrasing, style, "
+            "and structure demonstrated below. Do NOT deviate from these patterns.\n"
+            f"{examples_text}\n"
+        )
+
     dynamic_section = ""
     if dynamic_examples:
         dynamic_text = "\n".join(
@@ -447,12 +495,6 @@ def build_enhanced_prompt(
             "\nDYNAMIC TEMPLATE EXAMPLES:\n"
             f"{dynamic_text}\n"
         )
-    if rag_examples:
-        examples_text = "\n".join(
-            f"{i + 1}. {example}"
-            for i, example in enumerate(rag_examples)
-        )
-        examples_section = f"\nREFERENCE EXAMPLES:\n{examples_text}\n"
 
     prev_section = ""
     if previous_steps:
@@ -468,7 +510,7 @@ def build_enhanced_prompt(
 
     critical_rules = "\n".join(prompt_config.get("critical_rules", []))
     system_instruction = prompt_config.get(
-        "system_instruction", 
+        "system_instruction",
         "You are an expert Veeva Vault test automation engineer. Your task is to convert a UI interaction into ONE precise, professional test step."
     )
 
@@ -494,16 +536,23 @@ def build_enhanced_prompt(
 CRITICAL RULES (violating ANY rule = failure):
 {critical_rules}
 {context_section}
+{mandatory_context_section}
 {dynamic_section}
-{examples_section}
 {format_section}
 {prev_section}
 CURRENT INTERACTION:
 {interaction_block}
 DRAFT (may be inaccurate or poorly formatted):
 {draft}
-YOUR TASK: Generate ONE perfect test step following all rules above.
+YOUR TASK: Generate ONE perfect test step following all rules above. \
+If MANDATORY CONTEXT is provided above, your answer MUST match the style \
+and phrasing of those examples.
 OUTPUT (one sentence only, no prefix, no explanation):""".strip()
+
+    logger.debug(
+        "[PROMPT] Final prompt sent to LLM (first 1500 chars):\n%s",
+        prompt[:1500],
+    )
 
     return prompt
 
@@ -586,23 +635,34 @@ def try_template_generation(
             action == "select"
             and selected
         ):
+            template = None
+            if getattr(inp, "hasInput", False):
+                template = get_dynamic_template(
+                    action="select",
+                    template_key="dropdown_search_select",
+                )
+                if template:
+                    return template.format(
+                        value=selected,
+                        label=(
+                            inp.dropdownLabel
+                            or label
+                        ),
+                    )
 
-            template = (
-                get_dynamic_template(
+            if not template:
+                template = get_dynamic_template(
                     action="select",
                     template_key="dropdown_select",
                 )
-            )
-
-            if template:
-
-                return template.format(
-                    option=selected,
-                    label=(
-                        inp.dropdownLabel
-                        or label
-                    ),
-                )
+                if template:
+                    return template.format(
+                        option=selected,
+                        label=(
+                            inp.dropdownLabel
+                            or label
+                        ),
+                    )
 
         # ─────────────────────────────────────────────
         # Click Actions
@@ -636,6 +696,12 @@ def try_template_generation(
 # Single Step Generation
 # ─────────────────────────────────────────────────────────────
 
+# Cache config once at import time (instead of re-reading per retry/step)
+_generation_config = get_generation_config()
+_validation_config = get_validation_config()
+_rag_config = config.get("rag", {})
+_template_confidence = _validation_config.get("template_confidence_threshold", 0.80)
+
 async def generate_single_step(
     entry: KBEntry,
     rag: EnhancedRAGEngine,
@@ -647,60 +713,107 @@ async def generate_single_step(
     previous_steps: Optional[List[str]] = None,
 ) -> StepResult:
 
-    previous_steps = (
-        previous_steps or []
-    )
+    previous_steps = previous_steps or []
+    inp = entry.input
 
-    rag_config = config.get(
-        "rag",
-        {},
+    # ── Navbar / Tab Collection Menu fast-path ───────────────────────────
+    # Elements with a recognised context always produce a deterministic output.
+    # No LLM call is needed — the format is fully specified by the context value.
+    _CONTEXT_FORMATS = {
+        "navbar":              "Click on {label} from navbar.",
+        "tab_collection_menu": "Click on {label} from tab collection menu.",
+    }
+    _ctx = getattr(inp, "context", None)
+    if _ctx in _CONTEXT_FORMATS:
+        _raw_output = _CONTEXT_FORMATS[_ctx].format(label=inp.label)
+        fast_output = sanitize_output(_raw_output)
+        logger.info(
+            "[FAST-PATH] context=%r | label=%r | output=%r",
+            _ctx,
+            inp.label,
+            fast_output,
+        )
+        return StepResult(
+            step=1,
+            name=entry.name,
+            original_output=entry.output,
+            enhanced_output=fast_output,
+            action=inp.action,
+            label=inp.label,
+            value=inp.value,
+            userStep=inp.userStep,
+            rag_context_used=[],
+            confidence=1.0,
+            validation_reason=f"{_ctx}_fast_path",
+        )
+
+    # ── Template fast-path ───────────────────────────────────────────────
+    # If a template produces a high-confidence result, skip the expensive
+    # LLM call entirely.  This is the single biggest performance win —
+    # most click/enter/select actions have well-defined templates.
+
+    template_result = try_template_generation(entry)
+
+    if template_result:
+        cleaned_template = sanitize_output(template_result)
+        is_valid, t_score, t_reason = validate_output(
+            text=cleaned_template,
+            action=inp.action,
+            label=inp.label,
+            value=inp.value or inp.selectedText or "",
+        )
+
+        if t_score >= _template_confidence:
+            # Template is good enough — skip LLM entirely
+            return StepResult(
+                step=1,
+                name=entry.name,
+                original_output=entry.output,
+                enhanced_output=cleaned_template,
+                action=inp.action,
+                label=inp.label,
+                value=inp.value,
+                userStep=inp.userStep,
+                rag_context_used=[],
+                confidence=round(t_score, 3),
+                validation_reason=f"template_fast_path | {t_reason}",
+            )
+
+    # ── Full LLM generation path ────────────────────────────────────────
+    logger.debug(
+        "[RAG] Pre-retrieval | action=%r label=%r value=%r",
+        inp.action,
+        inp.label,
+        inp.value or inp.selectedText or "",
     )
 
     rag_examples = []
-
-    dynamic_examples = (
-        pattern_matcher.get_template_examples(
-            action=entry.input.action,
-        )
+    dynamic_examples = pattern_matcher.get_template_examples(
+        action=inp.action,
     )
 
     if rag:
-
         try:
-            rag_examples = (
-                rag.retrieve(
-                    action=entry.input.action,
-                    label=entry.input.label,
-                    value=entry.input.value
-                    or "",
-                    top_k=rag_config.get(
-                        "top_k",
-                        5,
-                    ),
-                    diversity_weight=rag_config.get(
-                        "diversity_weight",
-                        0.3,
-                    ),
-                )
+            rag_examples = rag.retrieve(
+                action=inp.action,
+                label=inp.label,
+                value=inp.value or inp.selectedText or "",
+                top_k=_rag_config.get("top_k", 5),
+                diversity_weight=_rag_config.get("diversity_weight", 0.3),
             )
-
+            logger.info(
+                "[RAG] Retrieved %d example(s) for label=%r action=%r",
+                len(rag_examples),
+                inp.label,
+                inp.action,
+            )
         except Exception:
-            logger.exception(
-                "RAG retrieval failed"
-            )
+            logger.exception("RAG retrieval failed")
 
     candidate_outputs = []
 
-    template_result = (
-        try_template_generation(
-            entry
-        )
-    )
-
     if template_result:
-        candidate_outputs.append(
-            template_result
-        )
+        candidate_outputs.append(template_result)
 
     prompt = build_enhanced_prompt(
         entry=entry,
@@ -710,75 +823,38 @@ async def generate_single_step(
         template_string=template_result,
     )
 
-    generation_config = (
-        get_generation_config()
-    )
-
-    num_candidates = (
-        generation_config.get(
-            "num_candidates",
-            3,
-        )
-    )
+    num_candidates = _generation_config.get("num_candidates", 1)
 
     for _ in range(num_candidates):
-
         try:
-            response = (
-                await safe_acompletion(
-                    model=model,
-                    custom_llm_provider=provider,
-                    api_key=api_key,
-                    api_base=api_base,
-                    temperature=temperature,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": prompt,
-                        }
-                    ],
-                )
+            response = await safe_acompletion(
+                model=model,
+                custom_llm_provider=provider,
+                api_key=api_key,
+                api_base=api_base,
+                temperature=temperature,
+                messages=[{"role": "user", "content": prompt}],
             )
 
-            content = (
-                response.choices[0]
-                .message.content
-            )
+            content = response.choices[0].message.content
 
             if content:
-                candidate_outputs.extend(
-                    extract_candidate_lines(
-                        content
-                    )
-                )
+                candidate_outputs.extend(extract_candidate_lines(content))
 
         except Exception:
-            logger.exception(
-                "Generation failed"
-            )
+            logger.exception("Generation failed")
 
     best_output = entry.output
-
     best_score = 0.0
-
     best_reason = "fallback"
 
     for candidate in candidate_outputs:
-
-        cleaned = sanitize_output(
-            candidate
-        )
-
-        (
-            is_valid,
-            score,
-            reason,
-        ) = validate_output(
+        cleaned = sanitize_output(candidate)
+        is_valid, score, reason = validate_output(
             text=cleaned,
-            action=entry.input.action,
-            label=entry.input.label,
-            value=entry.input.value
-            or "",
+            action=inp.action,
+            label=inp.label,
+            value=inp.value or inp.selectedText or "",
         )
 
         if score > best_score:
@@ -786,26 +862,31 @@ async def generate_single_step(
             best_score = score
             best_reason = reason
 
+    logger.info(
+        "[GEN] Step complete | label=%r | score=%.3f | reason=%s | output=%r",
+        inp.label,
+        best_score,
+        best_reason,
+        best_output[:80] if best_output else "",
+    )
+
     return StepResult(
         step=1,
         name=entry.name,
         original_output=entry.output,
         enhanced_output=best_output,
-        action=entry.input.action,
-        label=entry.input.label,
-        value=entry.input.value,
-        userStep=entry.input.userStep,
+        action=inp.action,
+        label=inp.label,
+        value=inp.value,
+        userStep=inp.userStep,
         rag_context_used=rag_examples,
-        confidence=round(
-            best_score,
-            3,
-        ),
+        confidence=round(best_score, 3),
         validation_reason=best_reason,
     )
 
 
 # ─────────────────────────────────────────────────────────────
-# Batch Generation
+# Batch Generation (with concurrency)
 # ─────────────────────────────────────────────────────────────
 
 async def run_batch_enhanced(
@@ -819,20 +900,12 @@ async def run_batch_enhanced(
     use_multi_candidate: bool = True,
 ) -> List[StepResult]:
 
-    results: List[
-        StepResult
-    ] = []
+    max_parallel = _generation_config.get("max_parallel_generations", 5)
+    semaphore = asyncio.Semaphore(max_parallel)
 
-    previous_steps: List[
-        str
-    ] = []
-
-    for index, entry in enumerate(
-        entries
-    ):
-
-        result = (
-            await generate_single_step(
+    async def _generate_one(index: int, entry: KBEntry) -> StepResult:
+        async with semaphore:
+            result = await generate_single_step(
                 entry=entry,
                 rag=rag,
                 api_key=api_key,
@@ -840,19 +913,18 @@ async def run_batch_enhanced(
                 provider=provider,
                 api_base=api_base,
                 temperature=temperature,
-                previous_steps=previous_steps,
+                previous_steps=[],  # parallel steps can't have sequential context
             )
-        )
+            result.step = index + 1
+            return result
 
-        result.step = index + 1
+    # Run all steps concurrently (bounded by semaphore)
+    results = await asyncio.gather(
+        *[_generate_one(i, entry) for i, entry in enumerate(entries)]
+    )
 
-        results.append(result)
+    return list(results)
 
-        previous_steps.append(
-            result.enhanced_output
-        )
-
-    return results
 
 
 # ─────────────────────────────────────────────────────────────

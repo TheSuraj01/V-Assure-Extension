@@ -108,6 +108,10 @@ class DynamicPatternMatcher:
                 )
 
                 return key_matches[0]
+            
+            # If template_key was specified but not found in DB, return None
+            # to let the caller use the correct JSON fallback template.
+            return None
 
         # ─────────────────────────────────────────────
         # Action-based fallback match

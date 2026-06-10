@@ -3,23 +3,50 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./veeva-backend
+      context: ./server
       dockerfile: Dockerfile
-    container_name: veeva-backend
+    container_name: vassure-backend
     ports:
       - "8000:8000"
     environment:
+      # Core application settings
+      - APP_ENV=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      
+      # Configuration encryption settings
+      - CONFIG_FILE_PATH=/etc/vassure/config.enc
+      - CONFIG_ENCRYPTION_KEY=${CONFIG_ENCRYPTION_KEY:-}
+      
+      # Secrets (passed from host environment if not using config.enc)
       - GROQ_API_KEY=${GROQ_API_KEY:-}
+      
+      # S3 Template storage settings
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_KEY=${S3_KEY:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION_NAME=${AWS_REGION_NAME:-us-east-1}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
     volumes:
-      - ./veeva-backend/data:/app/data
-      - ./veeva-backend/outputs:/app/outputs
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./veeva-scraper
-      dockerfile: Dockerfile
-    container_name: veeva-scraper
-    ports:
-      - "8080:80"
+      # Persistent storage for KB index data and session outputs
+      - ./server/data:/app/data
+      - ./server/outputs:/app/outputs
+      
+      # Mount directory for the encrypted configuration file
+      - ./server/config:/etc/vassure:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped

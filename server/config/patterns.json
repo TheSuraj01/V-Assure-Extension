@@ -1,0 +1,547 @@
+{
+  "by_action": {
+    "memory": {
+      "memory_store": {
+        "pattern_id": "PAT001",
+        "category": "memory",
+        "description": "Store dynamic value in memory",
+        "instruction_pattern": "Store the fetched value in the memory with the key '{key}'.",
+        "example_1": "Store the fetched value in the memory with the key 'Study A'.",
+        "priority": 1
+      },
+      "memory_fetch": {
+        "pattern_id": "PAT002",
+        "category": "memory",
+        "description": "Fetch value from memory",
+        "instruction_pattern": "Fetch the '{key}' value from the memory.",
+        "example_1": "Fetch the 'Study A' value from the memory.",
+        "priority": 1
+      },
+      "store_record_value": {
+        "pattern_id": "PAT024",
+        "category": "memory",
+        "description": "Store generated record value in memory",
+        "instruction_pattern": "Store the {record_value} value in the memory with the key '{key_name}'.",
+        "example_1": "Store the document number value in the memory with the key 'Document_1_number'.",
+        "priority": 1
+      }
+    },
+    "enter": {
+      "input_with_memory": {
+        "pattern_id": "PAT003",
+        "category": "input",
+        "description": "Enter fetched memory value in field",
+        "instruction_pattern": "Enter the fetched value in the {field_name} Input Field.",
+        "example_1": "Enter the fetched value in the Main Search Input Field.",
+        "priority": 1
+      },
+      "input_with_value": {
+        "pattern_id": "PAT004",
+        "category": "input",
+        "description": "Enter value in input field",
+        "instruction_pattern": "Enter <<{value}>> in {label} Input Field.",
+        "example_1": "Enter '132324' in the Title Input Field.",
+        "priority": 1
+      },
+      "input_and_action": {
+        "pattern_id": "PAT005",
+        "category": "input",
+        "description": "Enter value and perform action",
+        "instruction_pattern": "Enter <<{value}>> in {label} Input Field and {action}.",
+        "example_1": "Enter 'ABC123' in Study Input Field and click Enter Key.",
+        "priority": 1
+      }
+    },
+    "select": {
+      "dropdown_select": {
+        "pattern_id": "PAT006",
+        "category": "dropdown",
+        "description": "Select value from dropdown",
+        "instruction_pattern": "Select <<{option}>> from the {label} dropdown list.",
+        "example_1": "Select 'Basics' from the Organization Dropdown Input field.",
+        "priority": 1
+      },
+      "dropdown_simple": {
+        "pattern_id": "PAT007",
+        "category": "dropdown",
+        "description": "Select dropdown option",
+        "instruction_pattern": "Select {option} from the dropdown.",
+        "example_1": "Select Basics from the dropdown.",
+        "priority": 1
+      }
+    },
+    "click": {
+      "button_click": {
+        "pattern_id": "PAT008",
+        "category": "button",
+        "description": "Click button",
+        "instruction_pattern": "Click {label} button.",
+        "example_1": "Click Save button.",
+        "priority": 1
+      },
+      "button_click_with_context": {
+        "pattern_id": "PAT009",
+        "category": "button",
+        "description": "Click button with section context",
+        "instruction_pattern": "Click {label} button {context}.",
+        "example_1": "Click Save button under Study Countries Section.",
+        "priority": 1
+      },
+      "link_click": {
+        "pattern_id": "PAT010",
+        "category": "link",
+        "description": "Click link or UI element",
+        "instruction_pattern": "Click {label}.",
+        "example_1": "Click All Library under views Section.",
+        "priority": 1
+      }
+    },
+    "verify": {
+      "verify_state": {
+        "pattern_id": "PAT011",
+        "category": "validation",
+        "description": "Verify condition or UI state",
+        "instruction_pattern": "Verify {condition}.",
+        "example_1": "Verify that the TMF Viewer is displayed.",
+        "priority": 1
+      },
+      "verify_user": {
+        "pattern_id": "PAT012",
+        "category": "validation",
+        "description": "Verify user-related condition",
+        "instruction_pattern": "Verify the <<{user}>> user {condition}.",
+        "example_1": "Verify the <<Clinical User>> user is displayed.",
+        "priority": 1
+      }
+    },
+    "clear": {
+      "clear_field": {
+        "pattern_id": "PAT013",
+        "category": "input",
+        "description": "Clear UI field",
+        "instruction_pattern": "Clear {field_name} {field_type} field.",
+        "example_1": "Clear Study Country Input Field.",
+        "priority": 1
+      }
+    },
+    "keyboard": {
+      "keyboard_action": {
+        "pattern_id": "PAT014",
+        "category": "action",
+        "description": "Click keyboard key",
+        "instruction_pattern": "Click {key_name} Key.",
+        "example_1": "Click Enter Key.",
+        "priority": 1
+      }
+    },
+    "generate": {
+      "generate_dynamic_value": {
+        "pattern_id": "PAT015",
+        "category": "data",
+        "description": "Generate dynamic username or value",
+        "instruction_pattern": "Generate a {length} digit {string_type} username with suffix '{suffix}'.",
+        "example_1": "Generate a 8 digit alphanumeric username with suffix 'last_'.",
+        "priority": 1
+      },
+      "generate_large_string": {
+        "pattern_id": "PAT016",
+        "category": "data",
+        "description": "Create large random string",
+        "instruction_pattern": "Create a random {length} characters string.",
+        "example_1": "Create a random 32000 characters string.",
+        "priority": 1
+      },
+      "enter_generated_value": {
+        "pattern_id": "PAT017",
+        "category": "data",
+        "description": "Enter generated value in field",
+        "instruction_pattern": "Enter the generated {value_type} in the {field_name} {field_type} Field.",
+        "example_1": "Enter the generated username in the Last Name Input Field.",
+        "priority": 1
+      },
+      "generate_date": {
+        "pattern_id": "PAT018",
+        "category": "date",
+        "description": "Generate dynamic date",
+        "instruction_pattern": "Generate {offset} {timezone} date in {format} format.",
+        "example_1": "Generate +1 PST date in DD Mmm YYYY format.",
+        "priority": 1
+      },
+      "enter_generated_date": {
+        "pattern_id": "PAT019",
+        "category": "date",
+        "description": "Enter the generated date in the {field_name} {field_type} Field.",
+        "instruction_pattern": "Enter the generated date in the Date Input field.",
+        "example_1": "True",
+        "priority": 1
+      }
+    },
+    "navigate": {
+      "navigate_back": {
+        "pattern_id": "PAT020",
+        "category": "navigation",
+        "description": "Navigate to previous page",
+        "instruction_pattern": "Navigate Back",
+        "example_1": "Navigate Back",
+        "priority": 1
+      },
+      "reload_page": {
+        "pattern_id": "PAT021",
+        "category": "navigation",
+        "description": "Reload current page",
+        "instruction_pattern": "Reload Page",
+        "example_1": "Reload Page",
+        "priority": 1
+      }
+    },
+    "api": {
+      "create_object_record": {
+        "pattern_id": "PAT022",
+        "category": "api",
+        "description": "Create object record using API",
+        "instruction_pattern": "Create a Object record using Veeva Vault API using value <<{json_object}>>.",
+        "example_1": "Create a Object record using Veeva Vault API using value <<study_country_record_json>>.",
+        "priority": 1
+      },
+      "create_document_record": {
+        "pattern_id": "PAT023",
+        "category": "api",
+        "description": "Create document record using API",
+        "instruction_pattern": "Create a Document record using Veeva Vault API using value <<{json_object}>>.",
+        "example_1": "Create a Document record using Veeva Vault API using value <<etmf01_doc1_create_json>>.",
+        "priority": 1
+      }
+    },
+    "tab": {
+      "open_new_tab": {
+        "pattern_id": "PAT025",
+        "category": "navigation",
+        "description": "Open new browser tab",
+        "instruction_pattern": "Open New Tab",
+        "example_1": "Open New Tab",
+        "priority": 1
+      },
+      "switch_tab": {
+        "pattern_id": "PAT026",
+        "category": "navigation",
+        "description": "Switch browser tab",
+        "instruction_pattern": "Switch to Tab {tab_no}.",
+        "example_1": "Switch to Tab 2.",
+        "priority": 1
+      }
+    },
+    "pdf": {
+      "open_local_pdf": {
+        "pattern_id": "PAT027",
+        "category": "pdf",
+        "description": "Open local PDF in VAssure PDF Reader",
+        "instruction_pattern": "Open the local <<{variable_name}>> in VAssure PDF Reader application.",
+        "example_1": "Open the local <<study_pdf>> in VAssure PDF Reader application.",
+        "priority": 1
+      }
+    }
+  },
+  "flat": [
+    {
+      "pattern_id": "PAT001",
+      "action": "memory",
+      "category": "memory",
+      "template_key": "memory_store",
+      "description": "Store dynamic value in memory",
+      "instruction_pattern": "Store the fetched value in the memory with the key '{key}'.",
+      "example_1": "Store the fetched value in the memory with the key 'Study A'.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT002",
+      "action": "memory",
+      "category": "memory",
+      "template_key": "memory_fetch",
+      "description": "Fetch value from memory",
+      "instruction_pattern": "Fetch the '{key}' value from the memory.",
+      "example_1": "Fetch the 'Study A' value from the memory.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT003",
+      "action": "enter",
+      "category": "input",
+      "template_key": "input_with_memory",
+      "description": "Enter fetched memory value in field",
+      "instruction_pattern": "Enter the fetched value in the {field_name} Input Field.",
+      "example_1": "Enter the fetched value in the Main Search Input Field.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT004",
+      "action": "enter",
+      "category": "input",
+      "template_key": "input_with_value",
+      "description": "Enter value in input field",
+      "instruction_pattern": "Enter <<{value}>> in {label} Input Field.",
+      "example_1": "Enter '132324' in the Title Input Field.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT005",
+      "action": "enter",
+      "category": "input",
+      "template_key": "input_and_action",
+      "description": "Enter value and perform action",
+      "instruction_pattern": "Enter <<{value}>> in {label} Input Field and {action}.",
+      "example_1": "Enter 'ABC123' in Study Input Field and click Enter Key.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT006",
+      "action": "select",
+      "category": "dropdown",
+      "template_key": "dropdown_select",
+      "description": "Select value from dropdown",
+      "instruction_pattern": "Select <<{option}>> from the {label} dropdown list.",
+      "example_1": "Select 'Basics' from the Organization Dropdown Input field.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT007",
+      "action": "select",
+      "category": "dropdown",
+      "template_key": "dropdown_simple",
+      "description": "Select dropdown option",
+      "instruction_pattern": "Select {option} from the dropdown.",
+      "example_1": "Select Basics from the dropdown.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT008",
+      "action": "click",
+      "category": "button",
+      "template_key": "button_click",
+      "description": "Click button",
+      "instruction_pattern": "Click {label} button.",
+      "example_1": "Click Save button.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT009",
+      "action": "click",
+      "category": "button",
+      "template_key": "button_click_with_context",
+      "description": "Click button with section context",
+      "instruction_pattern": "Click {label} button {context}.",
+      "example_1": "Click Save button under Study Countries Section.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT010",
+      "action": "click",
+      "category": "link",
+      "template_key": "link_click",
+      "description": "Click link or UI element",
+      "instruction_pattern": "Click {label}.",
+      "example_1": "Click All Library under views Section.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT011",
+      "action": "verify",
+      "category": "validation",
+      "template_key": "verify_state",
+      "description": "Verify condition or UI state",
+      "instruction_pattern": "Verify {condition}.",
+      "example_1": "Verify that the TMF Viewer is displayed.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT012",
+      "action": "verify",
+      "category": "validation",
+      "template_key": "verify_user",
+      "description": "Verify user-related condition",
+      "instruction_pattern": "Verify the <<{user}>> user {condition}.",
+      "example_1": "Verify the <<Clinical User>> user is displayed.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT013",
+      "action": "clear",
+      "category": "input",
+      "template_key": "clear_field",
+      "description": "Clear UI field",
+      "instruction_pattern": "Clear {field_name} {field_type} field.",
+      "example_1": "Clear Study Country Input Field.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT014",
+      "action": "keyboard",
+      "category": "action",
+      "template_key": "keyboard_action",
+      "description": "Click keyboard key",
+      "instruction_pattern": "Click {key_name} Key.",
+      "example_1": "Click Enter Key.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT015",
+      "action": "generate",
+      "category": "data",
+      "template_key": "generate_dynamic_value",
+      "description": "Generate dynamic username or value",
+      "instruction_pattern": "Generate a {length} digit {string_type} username with suffix '{suffix}'.",
+      "example_1": "Generate a 8 digit alphanumeric username with suffix 'last_'.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT016",
+      "action": "generate",
+      "category": "data",
+      "template_key": "generate_large_string",
+      "description": "Create large random string",
+      "instruction_pattern": "Create a random {length} characters string.",
+      "example_1": "Create a random 32000 characters string.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT017",
+      "action": "generate",
+      "category": "data",
+      "template_key": "enter_generated_value",
+      "description": "Enter generated value in field",
+      "instruction_pattern": "Enter the generated {value_type} in the {field_name} {field_type} Field.",
+      "example_1": "Enter the generated username in the Last Name Input Field.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT018",
+      "action": "generate",
+      "category": "date",
+      "template_key": "generate_date",
+      "description": "Generate dynamic date",
+      "instruction_pattern": "Generate {offset} {timezone} date in {format} format.",
+      "example_1": "Generate +1 PST date in DD Mmm YYYY format.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT019",
+      "action": "generate",
+      "category": "date",
+      "template_key": "enter_generated_date",
+      "description": "Enter the generated date in the {field_name} {field_type} Field.",
+      "instruction_pattern": "Enter the generated date in the Date Input field.",
+      "example_1": "True",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT020",
+      "action": "navigate",
+      "category": "navigation",
+      "template_key": "navigate_back",
+      "description": "Navigate to previous page",
+      "instruction_pattern": "Navigate Back",
+      "example_1": "Navigate Back",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT021",
+      "action": "navigate",
+      "category": "navigation",
+      "template_key": "reload_page",
+      "description": "Reload current page",
+      "instruction_pattern": "Reload Page",
+      "example_1": "Reload Page",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT022",
+      "action": "api",
+      "category": "api",
+      "template_key": "create_object_record",
+      "description": "Create object record using API",
+      "instruction_pattern": "Create a Object record using Veeva Vault API using value <<{json_object}>>.",
+      "example_1": "Create a Object record using Veeva Vault API using value <<study_country_record_json>>.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT023",
+      "action": "api",
+      "category": "api",
+      "template_key": "create_document_record",
+      "description": "Create document record using API",
+      "instruction_pattern": "Create a Document record using Veeva Vault API using value <<{json_object}>>.",
+      "example_1": "Create a Document record using Veeva Vault API using value <<etmf01_doc1_create_json>>.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT024",
+      "action": "memory",
+      "category": "memory",
+      "template_key": "store_record_value",
+      "description": "Store generated record value in memory",
+      "instruction_pattern": "Store the {record_value} value in the memory with the key '{key_name}'.",
+      "example_1": "Store the document number value in the memory with the key 'Document_1_number'.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT025",
+      "action": "tab",
+      "category": "navigation",
+      "template_key": "open_new_tab",
+      "description": "Open new browser tab",
+      "instruction_pattern": "Open New Tab",
+      "example_1": "Open New Tab",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT026",
+      "action": "tab",
+      "category": "navigation",
+      "template_key": "switch_tab",
+      "description": "Switch browser tab",
+      "instruction_pattern": "Switch to Tab {tab_no}.",
+      "example_1": "Switch to Tab 2.",
+      "priority": 1
+    },
+    {
+      "pattern_id": "PAT027",
+      "action": "pdf",
+      "category": "pdf",
+      "template_key": "open_local_pdf",
+      "description": "Open local PDF in VAssure PDF Reader",
+      "instruction_pattern": "Open the local <<{variable_name}>> in VAssure PDF Reader application.",
+      "example_1": "Open the local <<study_pdf>> in VAssure PDF Reader application.",
+      "priority": 1
+    }
+  ],
+  "meta": {
+    "total_patterns": 27,
+    "actions": [
+      "api",
+      "clear",
+      "click",
+      "enter",
+      "generate",
+      "keyboard",
+      "memory",
+      "navigate",
+      "pdf",
+      "select",
+      "tab",
+      "verify"
+    ],
+    "categories": [
+      "action",
+      "api",
+      "button",
+      "data",
+      "date",
+      "dropdown",
+      "input",
+      "link",
+      "memory",
+      "navigation",
+      "pdf",
+      "validation"
+    ]
+  }
+}

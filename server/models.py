@@ -1,12 +1,6 @@
-import os
 from typing import Any, Dict, List, Optional
 
-from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-load_dotenv()
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -67,9 +61,19 @@ class KBInput(AppBaseModel):
         description="Dropdown label",
     )
 
+    hasInput: Optional[bool] = Field(
+        default=None,
+        description="Whether dropdown has searchable input",
+    )
+
     userStep: Optional[str] = Field(
         default=None,
         description="Grouped workflow step name",
+    )
+
+    context: Optional[str] = Field(
+        default=None,
+        description="Element context hint (e.g. 'navbar') passed from the extension",
     )
 
     @field_validator(
@@ -82,10 +86,8 @@ class KBInput(AppBaseModel):
         cls,
         value: Any,
     ) -> Any:
-
         if isinstance(value, str):
             return value.strip()
-
         return value
 
     @field_validator(
@@ -96,6 +98,7 @@ class KBInput(AppBaseModel):
         "ariaLabel",
         "dropdownLabel",
         "userStep",
+        "context",
         mode="before",
     )
     @classmethod
@@ -103,11 +106,9 @@ class KBInput(AppBaseModel):
         cls,
         value: Any,
     ) -> Any:
-
         if isinstance(value, str):
             cleaned = value.strip()
             return cleaned if cleaned else None
-
         return value
 
 
@@ -141,10 +142,8 @@ class KBEntry(AppBaseModel):
         cls,
         value: Any,
     ) -> Any:
-
         if isinstance(value, str):
             return value.strip()
-
         return value
 
 
@@ -153,7 +152,7 @@ class KBEntry(AppBaseModel):
 # ─────────────────────────────────────────────────────────────
 
 class StepResult(AppBaseModel):
-    step: int = Field(  #Step number can be removed from extension
+    step: int = Field(
         ...,
         ge=1,
         description="Step number",
@@ -224,18 +223,18 @@ class GenerateRequest(AppBaseModel):
     )
 
     api_key: Optional[str] = Field(
-        default=GROQ_API_KEY,   # change to local server API key
-        description="Provider API key",
+        default=None,
+        description="Provider API key (resolved from server config if not provided)",
     )
 
     model: str = Field(
-        default="llama-3.1-8b-instant",     # change to local server model
+        default="llama-3.1-8b-instant",
         description="LLM model name",
     )
 
     provider: str = Field(
-        default="groq", #This will change to local server later
-        description="Provider name",
+        default="groq",
+        description="Provider name (groq, bedrock, local)",
     )
 
     api_base: Optional[str] = Field(
@@ -287,10 +286,8 @@ class GenerateRequest(AppBaseModel):
         cls,
         value: Any,
     ) -> Any:
-
         if isinstance(value, str):
             return value.strip()
-
         return value
 
 

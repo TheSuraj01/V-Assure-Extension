@@ -419,10 +419,21 @@ class EnhancedRAGEngine:
     ) -> List[str]:
 
         if not self.entries:
+            logger.debug(
+                "[RAG] retrieve() called but no entries loaded — returning empty"
+            )
             return []
 
         query_terms = self._tokenize(
             f"{action} {label} {value}"
+        )
+
+        logger.debug(
+            "[RAG] Query | action=%r label=%r value=%r | tokens=%s",
+            action,
+            label,
+            value,
+            query_terms,
         )
 
         scores: Dict[int, float] = {}
@@ -465,11 +476,44 @@ class EnhancedRAGEngine:
             reverse=True,
         )
 
-        return self._apply_diversity_filter(
+        # ── Debug: log top-10 scored documents ──────────────────────────
+        if logger.isEnabledFor(10):  # logging.DEBUG == 10
+            top_preview = ranked_results[:10]
+            for rank, (doc_idx, doc_score) in enumerate(top_preview, 1):
+                entry = self.entries[doc_idx]
+                entry_label = entry.get("input", {}).get("label", "")
+                entry_action = entry.get("input", {}).get("action", "")
+                entry_output = entry.get("output", "")[:80]
+                logger.debug(
+                    "[RAG] Rank %d | score=%.3f | action=%r label=%r | output=%r",
+                    rank,
+                    doc_score,
+                    entry_action,
+                    entry_label,
+                    entry_output,
+                )
+
+        results = self._apply_diversity_filter(
             ranked_results,
             top_k,
             diversity_weight,
         )
+
+        logger.debug(
+            "[RAG] Retrieved %d/%d chunks for label=%r",
+            len(results),
+            top_k,
+            label,
+        )
+
+        for i, chunk in enumerate(results, 1):
+            logger.debug(
+                "[RAG] Chunk %d: %r",
+                i,
+                chunk[:120],
+            )
+
+        return results
 
     # ─────────────────────────────────────────────────────
     # Retrieval Helpers

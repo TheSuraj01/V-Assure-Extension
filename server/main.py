@@ -1,7 +1,7 @@
-import copy
-import io
+import hmac
 import json
 import os
+import signal
 import uuid
 from collections import OrderedDict
 from contextlib import asynccontextmanager
@@ -9,13 +9,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
-from config.config_loader import get_config
+from config.config_loader import get_config, reload_config
 from generator import (
     run_batch_enhanced,
     run_streaming_enhanced,
@@ -24,22 +23,20 @@ from generator import (
 )
 from models import GenerateRequest, GenerateResponse, HealthResponse
 from rag import EnhancedRAGEngine
-from utils import setup_logger
+from utils import setup_logger, build_text_report
 from services.pattern_loader import (
     init_patterns,
     init_patterns_from_bytes,
 )
-
 from services.excel_validator import (
     validate_dynamic_excel,
     validate_dynamic_excel_from_bytes,
 )
-
-from services.google_sheets_service import GoogleSheetsService
-from services import mongodb_service
-from config.config_loader import reload_config, get_config
-
-load_dotenv()
+from services.s3_service import S3Service
+from services.json_store_service import (
+    load_patterns as json_load_patterns,
+    save_patterns as json_save_patterns,
+)
 
 logger = setup_logger(__name__)
 
@@ -48,34 +45,22 @@ config = get_config()
 APP_CONFIG = config.get("app", {})
 GENERATION_CONFIG = config.get("generation", {})
 
-APP_NAME = APP_CONFIG.get(
-    "name",
-    "Veeva Vault Step Generator",
-)
+APP_NAME = APP_CONFIG.get("name", "Veeva Vault Step Generator")
+APP_VERSION = APP_CONFIG.get("version", "3.0.0")
 
-APP_VERSION = APP_CONFIG.get(
-    "version",
-    "2.0.0",
-)
-
-DEBUG_MODE = APP_CONFIG.get(
-    "debug",
-    True,
-)
-
-MAX_SESSION_CACHE = GENERATION_CONFIG.get(
-    "max_session_cache",
-    100,
-)
+MAX_SESSION_CACHE = GENERATION_CONFIG.get("max_session_cache", 100)
 
 OUTPUTS_DIR = Path("outputs")
 OUTPUTS_DIR.mkdir(exist_ok=True)
 
-DATA_DIR = Path(
-    os.getenv("KB_DATA_DIR", "data")
-)
+DATA_DIR = Path(os.getenv("KB_DATA_DIR", "data"))
 
 rag = EnhancedRAGEngine()
+
+
+# ─────────────────────────────────────────────────────────────
+# Dynamic Template Initialisation
+# ─────────────────────────────────────────────────────────────
 
 def init_dynamic_patterns(
     sheet_bytes: "io.BytesIO | None" = None,
@@ -84,81 +69,63 @@ def init_dynamic_patterns(
     Initialize dynamic Excel templates.
 
     When sheet_bytes is provided (BytesIO), the template is validated
-    and parsed entirely in memory - zero disk I/O.
+    and parsed entirely in memory — zero disk I/O.
 
     When sheet_bytes is None, falls back to the local disk file
     (config/dynamic_step_patterns.xlsx) if it exists.
     """
+    import io  # noqa: F811
 
     # ── In-memory path (production) ──────────────────────────────────────
     if sheet_bytes is not None:
-
-        logger.info("=" * 70)
         logger.info("DYNAMIC TEMPLATE INITIALIZATION (in-memory)")
-        logger.info("=" * 70)
 
         try:
-            logger.info("Validating dynamic Excel from memory")
-
             sheet_bytes.seek(0)
             validate_dynamic_excel_from_bytes(sheet_bytes)
-
             logger.info("Dynamic Excel validation successful")
 
             sheet_bytes.seek(0)
             patterns = init_patterns_from_bytes(sheet_bytes)
-
             logger.info(
                 "Dynamic templates loaded successfully | total=%s",
                 len(patterns),
             )
-
         except Exception:
             logger.exception("Dynamic template initialization failed (in-memory)")
             logger.warning("Falling back to JSON templates")
-
         return
 
     # ── Disk fallback path ───────────────────────────────────────────────
     try:
-
         excel_path = config.get_pattern_excel_path()
 
         if not excel_path.exists():
-            logger.info("=" * 70)
-            logger.info("DYNAMIC TEMPLATE STATUS")
-            logger.info("=" * 70)
             logger.info(
-                "Excel template file not found on disk: %s", excel_path
-            )
-            logger.warning(
-                "Using local fallback JSON templates for initial state."
+                "Excel template file not found on disk: %s — using JSON fallback",
+                excel_path,
             )
             return
 
-        logger.info("=" * 70)
         logger.info("DYNAMIC TEMPLATE INITIALIZATION (from disk)")
-        logger.info("=" * 70)
-
-        logger.info(
-            "Validating dynamic Excel | %s",
-            excel_path,
-        )
+        logger.info("Validating dynamic Excel | %s", excel_path)
 
         validate_dynamic_excel(excel_path)
-
         logger.info("Dynamic Excel validation successful")
 
         patterns = init_patterns()
-
         logger.info(
             "Dynamic templates loaded successfully | total=%s",
             len(patterns),
         )
-
     except Exception:
         logger.exception("Dynamic template initialization failed")
         logger.warning("Falling back to JSON templates")
+
+
+# ─────────────────────────────────────────────────────────────
+# Session & Stats Management
+# ─────────────────────────────────────────────────────────────
 
 sessions: OrderedDict[str, GenerateResponse] = OrderedDict()
 
@@ -170,153 +137,129 @@ generation_stats: Dict[str, float] = {
 
 
 def build_session_rag() -> EnhancedRAGEngine:
-    session_rag = EnhancedRAGEngine()
+    """
+    Return the shared RAG instance for generation.
 
-    session_rag.entries = copy.deepcopy(rag.entries)
-    session_rag._loaded_files = copy.deepcopy(
-        rag.loaded_files
-    )
-
-    session_rag.tfidf_index = copy.deepcopy(
-        rag.tfidf_index
-    )
-
-    session_rag.bm25_index = copy.deepcopy(
-        rag.bm25_index
-    )
-
-    session_rag.action_clusters = copy.deepcopy(
-        rag.action_clusters
-    )
-
-    session_rag.label_index = copy.deepcopy(
-        rag.label_index
-    )
-
-    session_rag.avg_doc_length = rag.avg_doc_length
-
-    return session_rag
+    The RAG index is read-only during request processing — no deep copy needed.
+    """
+    return rag
 
 
 def init_rag() -> None:
+    """Load KB data files and build the RAG index."""
     if DATA_DIR.exists():
-        logger.info(
-            "Loading KB files from %s",
-            DATA_DIR.resolve(),
-        )
-
-        rag.load_directory(
-            str(DATA_DIR),
-            "*.json",
-        )
-
+        logger.info("Loading KB files from %s", DATA_DIR.resolve())
+        rag.load_directory(str(DATA_DIR), "*.json")
     else:
-        logger.warning(
-            "Data directory not found: %s",
-            DATA_DIR.resolve(),
-        )
+        logger.warning("Data directory not found: %s", DATA_DIR.resolve())
 
-    logger.info(
-        "Building enhanced indices..."
-    )
-
+    logger.info("Building enhanced indices...")
     rag.build_index()
 
     stats = rag.get_stats()
-
     logger.info(
-        "RAG initialized successfully"
-    )
-
-    logger.info(
-        "Total entries: %s",
+        "RAG initialized | entries=%s | files=%s | actions=%s | terms=%s",
         stats.get("total_entries"),
-    )
-
-    logger.info(
-        "Loaded files: %s",
         stats.get("loaded_files"),
-    )
-
-    logger.info(
-        "Action types: %s",
         stats.get("action_types"),
-    )
-
-    logger.info(
-        "Unique labels: %s",
-        stats.get("unique_labels"),
-    )
-
-    logger.info(
-        "Index terms: %s",
         stats.get("index_terms"),
     )
 
 
+# ─────────────────────────────────────────────────────────────
+# Application Lifespan
+# ─────────────────────────────────────────────────────────────
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     logger.info("=" * 70)
     logger.info("APPLICATION STARTUP")
     logger.info("=" * 70)
 
+    # ── Startup Validation ────────────────────────────────────────────────
+    logger.info("STARTUP VALIDATION")
+    env = config.environment
+    debug = config.is_debug
+    logger.info("Running in environment: %s (debug=%s)", env, debug)
+
+    if not OUTPUTS_DIR.exists():
+        try:
+            OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+            logger.info("Created outputs directory: %s", OUTPUTS_DIR.resolve())
+        except Exception as exc:
+            logger.error("Failed to create outputs directory %s: %s", OUTPUTS_DIR, exc)
+            raise RuntimeError(f"Outputs directory invalid: {exc}")
+
+    if not DATA_DIR.exists():
+        logger.warning("Data directory %s does not exist. RAG will start with an empty index.", DATA_DIR.resolve())
+
+    groq_key = config.get_secret("groq_api_key") or os.getenv("GROQ_API_KEY", "")
+    bedrock_creds = config.get_secret("bedrock_credentials") or os.getenv("BEDROCK_CREDENTIALS", "")
+    local_key = config.get_secret("local_api_key") or os.getenv("LOCAL_API_KEY", "")
+    local_base = config.get_secret("local_api_base") or os.getenv("LOCAL_API_BASE", "")
+
+    providers_configured = []
+    if groq_key:
+        providers_configured.append("groq")
+    if bedrock_creds:
+        providers_configured.append("bedrock")
+    if local_key or local_base:
+        providers_configured.append("local")
+
+    if not providers_configured:
+        logger.warning(
+            "No LLM provider keys (groq_api_key, bedrock_credentials, local_api_key/base) "
+            "configured in encrypted secrets or env. Request-level keys will be required."
+        )
+    else:
+        logger.info("Configured LLM providers: %s", ", ".join(providers_configured))
+    logger.info("Startup validation complete")
+
     # Initialize RAG
     init_rag()
 
-    # ── Step-pattern templates: MongoDB-first strategy ──────────────────
-    # 1. Try loading from MongoDB (fast path — no network download).
-    # 2. If MongoDB is empty (first run), fall back to Google Sheets,
-    #    then upsert the parsed patterns into MongoDB for next time.
-    # 3. If Google Sheets is also unavailable, fall back to local disk/JSON.
-
-    logger.info("=" * 70)
+    # ── Step-pattern templates: 3-tier strategy ──────────────────────────
     logger.info("TEMPLATE INITIALIZATION")
-    logger.info("=" * 70)
 
-    mongo_patterns = await mongodb_service.load_patterns()
+    cached_patterns = json_load_patterns()
 
-    if mongo_patterns:
+    if cached_patterns:
         logger.info(
-            "Startup: Loaded %s templates from MongoDB (fast path)",
-            len(mongo_patterns),
+            "Startup: Loaded %d templates from patterns_cache.json (fast path)",
+            len(cached_patterns),
         )
-        # Register directly into runtime cache — no Excel download needed
-        from config.config_loader import get_config as _gc
-        _gc().set_runtime_cache("dynamic_templates", mongo_patterns)
+        get_config().set_runtime_cache("dynamic_templates", cached_patterns)
     else:
         logger.info(
-            "Startup: MongoDB empty — fetching templates from Google Sheets"
+            "Startup: patterns_cache.json empty or missing — fetching Excel from S3"
         )
 
-        google_sharing_link = os.getenv("GOOGLE_SHARING_LINK", "").strip()
+        s3_bucket = os.getenv("S3_BUCKET", "").strip()
+        s3_key = os.getenv("S3_KEY", "").strip()
         startup_bytes = None
 
-        if google_sharing_link:
+        if s3_bucket and s3_key:
             try:
-                startup_bytes = GoogleSheetsService.download_sheet_as_bytes(
-                    sharing_url=google_sharing_link,
+                startup_bytes = S3Service.download_excel_as_bytes(
+                    bucket=s3_bucket,
+                    key=s3_key,
                 )
-                logger.info("Startup: Google Sheet downloaded into memory")
-            except Exception as _exc:
-                logger.warning(
-                    "Startup: Google Sheets download failed | %s", _exc
-                )
+                logger.info("Startup: Excel downloaded from S3 into memory")
+            except Exception:
+                logger.warning("Startup: S3 download failed — falling back to disk")
         else:
-            logger.info(
-                "Startup: GOOGLE_SHARING_LINK not set — skipping Sheet download"
-            )
+            logger.info("Startup: S3_BUCKET or S3_KEY not set — skipping S3 download")
 
-        # Parse & register patterns (in-memory or disk/JSON fallback)
+        # Parse & register patterns (in-memory S3 bytes or disk/JSON fallback)
         init_dynamic_patterns(startup_bytes)
 
-        # If we got patterns from the Sheet, persist them to MongoDB
+        # Persist freshly parsed patterns to JSON cache for next restart
         if startup_bytes is not None:
-            cached = get_config().get_runtime_cache("dynamic_templates", {})
-            if cached:
-                synced = await mongodb_service.upsert_patterns(cached)
+            fresh = get_config().get_runtime_cache("dynamic_templates", {})
+            if fresh:
+                saved = json_save_patterns(fresh)
                 logger.info(
-                    "Startup: Persisted %s templates to MongoDB", synced
+                    "Startup: Persisted %d templates to patterns_cache.json", saved
                 )
 
     logger.info("Application startup completed successfully")
@@ -326,8 +269,11 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 70)
     logger.info("APPLICATION SHUTDOWN")
     logger.info("=" * 70)
-    await mongodb_service.close()
 
+
+# ─────────────────────────────────────────────────────────────
+# FastAPI Application
+# ─────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title=APP_NAME,
@@ -337,217 +283,105 @@ app = FastAPI(
     ),
     version=APP_VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if config.is_debug else None,
+    redoc_url="/redoc" if config.is_debug else None,
 )
+
+# CORS — configurable origins (default: restrictive in production)
+_cors_origins_env = os.getenv("CORS_ORIGINS", "").strip()
+if _cors_origins_env:
+    _cors_origins = [origin.strip() for origin in _cors_origins_env.split(",")]
+else:
+    # Default to permissive for Chrome Extension compatibility
+    _cors_origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+# ─────────────────────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────────────────────
+
 def resolve_api_config(req: GenerateRequest):
+    """Resolve API key and base URL from request or server config."""
     api_key = req.api_key
     api_base = req.api_base
 
     if req.provider == "groq":
-        api_key = api_key or os.getenv("GROQ_API_KEY")
+        api_key = api_key or config.get_secret("groq_api_key") or os.getenv("GROQ_API_KEY", "")
     elif req.provider == "bedrock":
-        api_key = api_key or os.getenv("BEDROCK_CREDENTIALS")
+        api_key = api_key or config.get_secret("bedrock_credentials") or os.getenv("BEDROCK_CREDENTIALS", "")
     elif req.provider == "local":
-        api_key = api_key or os.getenv("LOCAL_API_KEY")
-        api_base = api_base or os.getenv("LOCAL_API_BASE")
-    
+        api_key = api_key or config.get_secret("local_api_key") or os.getenv("LOCAL_API_KEY", "")
+        api_base = api_base or config.get_secret("local_api_base") or os.getenv("LOCAL_API_BASE", "")
+
     return api_key, api_base
 
 
-def update_generation_stats(
-    result: GenerateResponse,
-) -> None:
-
+def update_generation_stats(result: GenerateResponse) -> None:
+    """Update rolling generation statistics."""
     generation_stats["total_sessions"] += 1
-
-    generation_stats[
-        "total_steps_generated"
-    ] += result.total_steps
+    generation_stats["total_steps_generated"] += result.total_steps
 
     confidences = []
-
     for step in result.steps:
-        confidence = getattr(
-            step,
-            "confidence",
-            None,
-        )
-
+        confidence = getattr(step, "confidence", None)
         if confidence is not None:
             confidences.append(confidence)
 
     if confidences:
-        avg_confidence = (
-            sum(confidences)
-            / len(confidences)
-        )
-
+        avg_confidence = sum(confidences) / len(confidences)
         generation_stats["avg_confidence"] = (
-            generation_stats["avg_confidence"]
-            * 0.9
+            generation_stats["avg_confidence"] * 0.9
             + avg_confidence * 0.1
         )
 
 
-def build_text_report(
-    session_id: str,
-    result: GenerateResponse,
-) -> str:
-
-    lines = []
-
-    lines.append("=" * 70)
-    lines.append(
-        "  VEEVA VAULT TEST AUTOMATION SCRIPT"
-    )
-
-    lines.append("=" * 70)
-    lines.append("")
-
-    lines.append(
-        f"Session ID    : {session_id}"
-    )
-
-    lines.append(
-        "Generated     : "
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    )
-
-    lines.append(
-        f"Model Used    : {result.model_used}"
-    )
-
-    lines.append(
-        f"Total Steps   : {result.total_steps}"
-    )
-
-    lines.append("")
-    lines.append("=" * 70)
-    lines.append("TEST STEPS")
-    lines.append("=" * 70)
-    lines.append("")
-
+def build_full_script(step_results) -> str:
+    """Build a combined human-readable test script from step results."""
+    script_lines = []
     current_user_step = None
-    step_counter = 1
 
-    for step in result.steps:
-        if (
-            step.userStep
-            and step.userStep != current_user_step
-        ):
-            if current_user_step is not None:
-                lines.append("")
+    for result in step_results:
+        if result.userStep and result.userStep != current_user_step:
+            if script_lines:
+                script_lines.append("")
+            script_lines.append(f"{result.userStep}:")
+            current_user_step = result.userStep
 
-            lines.append(f"{step.userStep}:")
+        script_lines.append(f"{result.step}. {result.enhanced_output}")
 
-            current_user_step = step.userStep
-
-        lines.append(
-            f"{step_counter}. "
-            f"{step.enhanced_output}"
-        )
-
-        step_counter += 1
-
-    lines.append("")
-    lines.append("=" * 70)
-    lines.append("DETAILED STEP INFORMATION")
-    lines.append("=" * 70)
-    lines.append("")
-
-    for step in result.steps:
-        lines.append(
-            f"Step {step.step}: {step.name}"
-        )
-
-        lines.append(
-            f"  Action       : {step.action}"
-        )
-
-        lines.append(
-            f"  Label        : {step.label}"
-        )
-
-        if step.value:
-            lines.append(
-                f"  Value        : {step.value}"
-            )
-
-        lines.append(
-            f"  Original     : {step.original_output}"
-        )
-
-        lines.append(
-            f"  Enhanced     : {step.enhanced_output}"
-        )
-
-        if step.rag_context_used:
-            lines.append(
-                "  RAG Examples : "
-                f"{len(step.rag_context_used)} retrieved"
-            )
-
-        lines.append("")
-
-    lines.append("=" * 70)
-
-    lines.append(
-        f"End of test script - {session_id}"
-    )
-
-    lines.append("=" * 70)
-
-    return "\n".join(lines)
+    return "\n".join(script_lines)
 
 
 def save_session(
     session_id: str,
     result: GenerateResponse,
 ) -> None:
-
+    """Persist session to memory cache and disk."""
     if len(sessions) >= MAX_SESSION_CACHE:
         sessions.popitem(last=False)
 
     sessions[session_id] = result
-
     update_generation_stats(result)
 
-    txt_path = (
-        OUTPUTS_DIR
-        / f"{session_id}.txt"
-    )
+    # Save text report
+    txt_path = OUTPUTS_DIR / f"{session_id}.txt"
+    txt_content = build_text_report(session_id, result)
 
-    txt_content = build_text_report(
-        session_id,
-        result,
-    )
-
-    with open(
-        txt_path,
-        "w",
-        encoding="utf-8",
-    ) as file:
+    with open(txt_path, "w", encoding="utf-8") as file:
         file.write(txt_content)
 
-    json_path = (
-        OUTPUTS_DIR
-        / f"{session_id}.json"
-    )
+    # Save JSON report
+    json_path = OUTPUTS_DIR / f"{session_id}.json"
 
-    with open(
-        json_path,
-        "w",
-        encoding="utf-8",
-    ) as file:
+    with open(json_path, "w", encoding="utf-8") as file:
         json.dump(
             result.model_dump(),
             file,
@@ -555,56 +389,22 @@ def save_session(
             ensure_ascii=False,
         )
 
-    logger.info(
-        "Session saved successfully | %s",
-        session_id,
-    )
+    logger.info("Session saved successfully | %s", session_id)
 
 
-def build_full_script(
-    step_results,
-) -> str:
+# ─────────────────────────────────────────────────────────────
+# API Endpoints
+# ─────────────────────────────────────────────────────────────
 
-    script_lines = []
-
-    current_user_step = None
-
-    for result in step_results:
-        if (
-            result.userStep
-            and result.userStep != current_user_step
-        ):
-            if script_lines:
-                script_lines.append("")
-
-            script_lines.append(
-                f"{result.userStep}:"
-            )
-
-            current_user_step = result.userStep
-
-        script_lines.append(
-            f"{result.step}. "
-            f"{result.enhanced_output}"
-        )
-
-    return "\n".join(script_lines)
-
-
-@app.get(
-    "/health",
-    response_model=HealthResponse,
-)
+@app.get("/health", response_model=HealthResponse)
 async def health():
-
+    """Health check endpoint."""
     return HealthResponse(
         status="ok",
-        kb_files_loaded=len(
-            rag.loaded_files
-        ),
+        kb_files_loaded=len(rag.loaded_files),
         kb_entries_total=rag.total_entries,
         groq_configured=bool(
-            os.getenv("GROQ_API_KEY")
+            config.get_secret("groq_api_key") or os.getenv("GROQ_API_KEY")
         ),
     )
 
@@ -615,94 +415,88 @@ class AdminSyncRequest(BaseModel):
 
 
 @app.post("/admin/sync-templates")
-async def admin_sync_templates(
-    req: AdminSyncRequest,
-):
+async def admin_sync_templates(req: AdminSyncRequest):
     """
-    Admin-only endpoint.
+    Admin-only endpoint: sync templates from S3.
 
-    - Validates the admin code against ADMIN_SYNC_CODE env var.
-    - Downloads the latest Google Sheet into memory.
-    - Parses the step-pattern templates from the sheet.
-    - Upserts all patterns into MongoDB.
+    - Validates the admin code using constant-time comparison.
+    - Downloads the latest Excel file from S3 into memory.
+    - Validates and parses the step-pattern templates.
+    - Saves patterns to patterns_cache.json.
     - Refreshes the in-process runtime cache.
-
-    Returns the count of synced patterns.
     """
     global config
 
-    expected_code = os.getenv("ADMIN_SYNC_CODE", "").strip()
+    expected_code = (
+        config.get_secret("admin_sync_code")
+        or os.getenv("ADMIN_SYNC_CODE", "")
+    ).strip()
 
-    if not expected_code or req.admin_code.strip() != expected_code:
+    if not expected_code:
+        logger.warning("Admin sync attempted but ADMIN_SYNC_CODE is not configured")
+        raise HTTPException(status_code=503, detail="Admin sync is not configured")
+
+    # Constant-time comparison to prevent timing attacks
+    if not hmac.compare_digest(req.admin_code.strip(), expected_code):
         logger.warning("Admin sync attempt with invalid code")
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid admin code",
-        )
+        raise HTTPException(status_code=403, detail="Invalid admin code")
 
-    google_sharing_link = os.getenv("GOOGLE_SHARING_LINK", "").strip()
+    s3_bucket = os.getenv("S3_BUCKET", "").strip()
+    s3_key = os.getenv("S3_KEY", "").strip()
 
-    if not google_sharing_link:
+    if not s3_bucket or not s3_key:
         raise HTTPException(
             status_code=503,
-            detail="GOOGLE_SHARING_LINK not configured on the server",
+            detail="S3_BUCKET or S3_KEY not configured on the server",
         )
 
     try:
-        logger.info("Admin sync: downloading Google Sheet into memory")
-        sheet_bytes = GoogleSheetsService.download_sheet_as_bytes(
-            sharing_url=google_sharing_link,
+        logger.info(
+            "Admin sync: downloading Excel from S3 | bucket=%s key=%s",
+            s3_bucket, s3_key,
         )
-    except Exception as exc:
-        logger.exception("Admin sync: Google Sheets download failed")
+        sheet_bytes = S3Service.download_excel_as_bytes(
+            bucket=s3_bucket,
+            key=s3_key,
+        )
+    except Exception:
+        logger.exception("Admin sync: S3 download failed")
         raise HTTPException(
             status_code=502,
-            detail=f"Failed to download Google Sheet: {exc}",
+            detail="Failed to download Excel from S3",
         )
 
-    # Reload config and re-parse patterns from the sheet bytes
+    # Reload config and re-parse patterns from the downloaded bytes
     config = reload_config()
     init_dynamic_patterns(sheet_bytes)
 
-    # Upsert freshly parsed patterns into MongoDB
-    cached = get_config().get_runtime_cache("dynamic_templates", {})
-    synced = await mongodb_service.upsert_patterns(cached)
+    # Persist freshly parsed patterns to JSON cache
+    fresh = get_config().get_runtime_cache("dynamic_templates", {})
+    saved = json_save_patterns(fresh)
 
     logger.info(
-        "Admin sync complete | synced=%s templates into MongoDB", synced
+        "Admin sync complete | saved=%d templates to patterns_cache.json", saved
     )
 
     return {
         "status": "ok",
-        "synced": synced,
-        "message": f"{synced} templates synced to MongoDB and runtime cache refreshed",
+        "synced": saved,
+        "message": f"{saved} templates synced from S3 and saved to cache",
     }
 
 
-@app.post(
-    "/generate",
-    response_model=GenerateResponse,
-)
-async def generate(
-    req: GenerateRequest,
-):
-
+@app.post("/generate", response_model=GenerateResponse)
+async def generate(req: GenerateRequest):
+    """Generate enhanced test steps from KB entries."""
     if not req.entries:
-        raise HTTPException(
-            status_code=400,
-            detail="No KB entries provided",
-        )
+        raise HTTPException(status_code=400, detail="No KB entries provided")
 
     api_key, api_base = resolve_api_config(req)
 
     if req.provider == "groq" and not api_key:
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Groq API key required. "
-                "Pass 'api_key' or "
-                "set GROQ_API_KEY env var"
-            ),
+            detail="Groq API key required. Pass 'api_key' or set GROQ_API_KEY env var",
         )
 
     session_rag = (
@@ -711,21 +505,9 @@ async def generate(
         else EnhancedRAGEngine()
     )
 
-    logger.info("=" * 70)
-    logger.info("GENERATION REQUEST")
-    logger.info("=" * 70)
-
     logger.info(
-        "Steps=%s | Provider=%s | Model=%s",
-        len(req.entries),
-        req.provider,
-        req.model,
-    )
-
-    logger.info(
-        "Temperature=%s | UseRAG=%s",
-        req.temperature,
-        req.use_rag,
+        "GENERATION REQUEST | Steps=%s | Provider=%s | Model=%s | Temperature=%s | UseRAG=%s",
+        len(req.entries), req.provider, req.model, req.temperature, req.use_rag,
     )
 
     try:
@@ -739,76 +521,45 @@ async def generate(
             temperature=req.temperature,
             use_multi_candidate=True,
         )
-
-    except Exception as exc:
-        logger.exception(
-            "Batch generation failed"
-        )
-
+    except Exception:
+        logger.exception("Batch generation failed")
         raise HTTPException(
             status_code=500,
-            detail=str(exc),
+            detail="Step generation failed. Please try again.",
         )
 
-    full_script = build_full_script(
-        step_results
-    )
-
+    full_script = build_full_script(step_results)
     session_id = str(uuid.uuid4())[:8]
 
     if req.session_name:
-        safe_name = (
-            req.session_name
-            .replace(" ", "_")
-            .strip()
-        )
-
-        session_id = (
-            f"{safe_name}_{session_id}"
-        )
+        safe_name = req.session_name.replace(" ", "_").strip()
+        session_id = f"{safe_name}_{session_id}"
 
     response = GenerateResponse(
         session_id=session_id,
         total_steps=len(step_results),
         steps=step_results,
         full_script=full_script,
-        download_url=(
-            f"/download/{session_id}"
-        ),
+        download_url=f"/download/{session_id}",
         model_used=req.model,
     )
 
-    save_session(
-        session_id,
-        response,
-    )
-
-    logger.info(
-        "Session completed successfully | %s",
-        session_id,
-    )
+    save_session(session_id, response)
+    logger.info("Session completed successfully | %s", session_id)
 
     return response
 
 
 @app.post("/generate/stream")
-async def generate_stream(
-    req: GenerateRequest,
-):
-
+async def generate_stream(req: GenerateRequest):
+    """Generate enhanced test steps with SSE streaming."""
     if not req.entries:
-        raise HTTPException(
-            status_code=400,
-            detail="No KB entries provided",
-        )
+        raise HTTPException(status_code=400, detail="No KB entries provided")
 
     api_key, api_base = resolve_api_config(req)
 
     if req.provider == "groq" and not api_key:
-        raise HTTPException(
-            status_code=400,
-            detail="Groq API key required",
-        )
+        raise HTTPException(status_code=400, detail="Groq API key required")
 
     session_rag = (
         build_session_rag()
@@ -835,58 +586,34 @@ async def generate_stream(
 
 
 @app.get("/download/{session_id}")
-async def download(
-    session_id: str,
-    format: str = "txt",
-):
-
-    extension = (
-        "json"
-        if format == "json"
-        else "txt"
-    )
-
-    path = (
-        OUTPUTS_DIR
-        / f"{session_id}.{extension}"
-    )
+async def download(session_id: str, format: str = "txt"):
+    """Download a generated session as TXT or JSON."""
+    extension = "json" if format == "json" else "txt"
+    path = OUTPUTS_DIR / f"{session_id}.{extension}"
 
     if not path.exists():
         raise HTTPException(
             status_code=404,
-            detail=(
-                f"Session "
-                f"'{session_id}' not found"
-            ),
+            detail=f"Session '{session_id}' not found",
         )
 
     return FileResponse(
         path=str(path),
-        filename=(
-            f"veeva_test_"
-            f"{session_id}.{extension}"
-        ),
+        filename=f"veeva_test_{session_id}.{extension}",
         media_type="application/octet-stream",
     )
 
 
 @app.get("/sessions")
 async def list_sessions():
-
+    """List all stored sessions."""
     results = []
 
-    txt_files = sorted(
-        OUTPUTS_DIR.glob("*.txt"),
-        reverse=True,
-    )
+    txt_files = sorted(OUTPUTS_DIR.glob("*.txt"), reverse=True)
 
     for txt_file in txt_files:
         session_id = txt_file.stem
-
-        json_file = (
-            OUTPUTS_DIR
-            / f"{session_id}.json"
-        )
+        json_file = OUTPUTS_DIR / f"{session_id}.json"
 
         entry = {
             "session_id": session_id,
@@ -899,27 +626,13 @@ async def list_sessions():
 
         if json_file.exists():
             try:
-                with open(
-                    json_file,
-                    "r",
-                    encoding="utf-8",
-                ) as file:
+                with open(json_file, "r", encoding="utf-8") as file:
                     data = json.load(file)
-
-                entry["total_steps"] = data.get(
-                    "total_steps",
-                    0,
-                )
-
-                entry["model_used"] = data.get(
-                    "model_used",
-                    "",
-                )
-
+                entry["total_steps"] = data.get("total_steps", 0)
+                entry["model_used"] = data.get("model_used", "")
             except Exception:
                 logger.warning(
-                    "Failed reading session metadata | %s",
-                    session_id,
+                    "Failed reading session metadata | %s", session_id
                 )
 
         results.append(entry)
@@ -931,100 +644,59 @@ async def list_sessions():
 
 
 @app.get("/stats")
-
-@app.get("/patterns")
-async def get_patterns():
-
-    patterns = (
-        config.get_runtime_cache(
-            "dynamic_templates",
-            {},
-        )
-    )
-
-    return {
-        "total_patterns": len(patterns),
-        "patterns": patterns,
-    }
-    
 async def get_stats():
-
+    """Return application statistics."""
     kb_stats = rag.get_stats()
 
     return {
         "knowledge_base": kb_stats,
         "generation": generation_stats,
         "system": {
-            "total_sessions_stored": len(
-                sessions
-            ),
-            "output_files": len(
-                list(
-                    OUTPUTS_DIR.glob("*.txt")
-                )
-            ),
+            "total_sessions_stored": len(sessions),
+            "output_files": len(list(OUTPUTS_DIR.glob("*.txt"))),
         },
     }
 
 
-@app.post("/kb/upload")
-async def upload_kb(
-    file: UploadFile = File(...),
-):
+@app.get("/patterns")
+async def get_patterns():
+    """Return loaded dynamic patterns."""
+    patterns = config.get_runtime_cache("dynamic_templates", {})
 
+    return {
+        "total_patterns": len(patterns),
+        "patterns": patterns,
+    }
+
+
+@app.post("/kb/upload")
+async def upload_kb(file: UploadFile = File(...)):
+    """Upload a new KB data file."""
     if not file.filename.endswith(".json"):
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Only .json files are accepted"
-            ),
-        )
+        raise HTTPException(status_code=400, detail="Only .json files are accepted")
 
     DATA_DIR.mkdir(exist_ok=True)
-
-    destination = (
-        DATA_DIR
-        / file.filename
-    )
+    destination = DATA_DIR / file.filename
 
     content = await file.read()
 
     try:
         parsed = json.loads(content)
-
         if not isinstance(parsed, list):
-            raise ValueError(
-                "File must be a JSON array"
-            )
-
+            raise ValueError("File must be a JSON array")
     except Exception as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid JSON: {exc}",
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {exc}")
 
-    with open(
-        destination,
-        "wb",
-    ) as file_obj:
+    with open(destination, "wb") as file_obj:
         file_obj.write(content)
 
-    added = rag.load_file(
-        str(destination)
-    )
-
+    added = rag.load_file(str(destination))
     rag.build_index()
 
-    logger.info(
-        "KB uploaded successfully | %s",
-        file.filename,
-    )
+    logger.info("KB uploaded successfully | %s", file.filename)
 
     return {
-        "message": (
-            f"Loaded {added} entries "
-            f"from {file.filename}"
-        ),
+        "message": f"Loaded {added} entries from {file.filename}",
         "total_entries": rag.total_entries,
         "stats": rag.get_stats(),
     }
@@ -1032,24 +704,14 @@ async def upload_kb(
 
 @app.post("/kb/reload")
 async def reload_kb():
-
-    rag.entries = []
-    rag.tfidf_index = {}
-    rag.bm25_index = {}
-    rag.action_clusters = {}
-    rag.label_index = {}
-    rag._loaded_files = []
-
+    """Reload all KB data from disk."""
+    rag.clear()
     init_rag()
 
-    logger.info(
-        "Knowledge base reloaded"
-    )
+    logger.info("Knowledge base reloaded")
 
     return {
-        "message": (
-            "KB reloaded successfully"
-        ),
+        "message": "KB reloaded successfully",
         "stats": rag.get_stats(),
     }
 
@@ -1062,13 +724,9 @@ class ValidateRequest(BaseModel):
 
 
 @app.post("/validate")
-async def validate_output_endpoint(
-    req: ValidateRequest,
-):
-
-    cleaned = sanitize_output(
-        req.output
-    )
+async def validate_output_endpoint(req: ValidateRequest):
+    """Validate a single step output."""
+    cleaned = sanitize_output(req.output)
 
     is_valid, score, reason = validate_output(
         cleaned,
@@ -1088,6 +746,26 @@ async def validate_output_endpoint(
     }
 
 
+# ─────────────────────────────────────────────────────────────
+# Graceful Shutdown
+# ─────────────────────────────────────────────────────────────
+
+def _handle_signal(signum, frame):
+    """Handle SIGTERM/SIGINT for graceful shutdown."""
+    logger.info("Received signal %s — initiating graceful shutdown", signum)
+    raise SystemExit(0)
+
+
+# Register signal handlers (only in main process)
+if os.getenv("_UVICORN_WORKER", "") != "1":
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
+
+
+# ─────────────────────────────────────────────────────────────
+# Main Entry Point
+# ─────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     import uvicorn
 
@@ -1095,5 +773,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=DEBUG_MODE,
+        reload=config.is_debug,
     )

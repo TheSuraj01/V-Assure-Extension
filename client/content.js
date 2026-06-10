@@ -172,24 +172,21 @@
     }
 
     static getDropdownContext(el) {
-      const container = el.closest('[class*="dropdown"], [role="listbox"], [class*="picker"], [class*="menu-list"], [class*="options"], [class*="picklist"], [class*="vv-menu"], [class*="select2-"], [class*="chzn-drop"], [class*="k-list"], [class*="tabcollection"]');
-      if (!container) return null;
-
-      // ── Tab Collections panel: always resolve from the trigger button ──
-      // Calling resolveLabel() on the panel reads ALL the option texts
-      // (Admin, Business Admin, All, ...) and returns the wrong string.
-      const cCls = typeof container.className === 'string' ? container.className : '';
-      if (cCls.includes('tabcollection')) {
-        // Find the trigger button — prefer within the same span, else global search
+      const tabColContainer = el.closest('[class*="tabcollection"]');
+      if (tabColContainer) {
         const triggerBtn =
-          container.querySelector('[aria-label*="Tab Collection" i]') ||
-          container.querySelector('[class*="tabcollection-menu-button"]') ||
+          tabColContainer.querySelector('[aria-label*="Tab Collection" i]') ||
+          tabColContainer.querySelector('[class*="tabcollection-menu-button"]') ||
           document.querySelector('[class*="tabcollection-menu-button"]');
         if (triggerBtn) {
-          return triggerBtn.getAttribute('aria-label') || 'Tab Collections';
+          const aria = triggerBtn.getAttribute('aria-label');
+          if (aria && aria.toLowerCase().includes('tab collection')) return aria;
         }
         return 'Tab Collections';
       }
+
+      const container = el.closest('[class*="dropdown"], [role="listbox"], [class*="picker"], [class*="menu-list"], [class*="options"], [class*="picklist"], [class*="vv-menu"], [class*="select2-"], [class*="chzn-drop"], [class*="k-list"]');
+      if (!container) return null;
 
       const aria = (container.getAttribute('aria-label') || '').toLowerCase();
       const title = (container.getAttribute('title') || '').toLowerCase();
@@ -204,6 +201,34 @@
         }
       }
       return this.resolveLabel(container);
+    }
+
+    static hasDropdownInput(el) {
+      const container = el.closest('[class*="dropdown"], [role="listbox"], [class*="picker"], [class*="menu-list"], [class*="options"], [class*="picklist"], [class*="vv-menu"], [class*="select2-"], [class*="chzn-drop"], [class*="k-list"], [class*="tabcollection"]');
+      if (!container) return false;
+
+      // Check inside container
+      if (container.querySelector('input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"])')) return true;
+
+      // Check for related trigger/input using aria-controls or aria-owns
+      if (container.id) {
+        if (document.querySelector(`input[aria-controls="${CSS.escape(container.id)}"]`)) return true;
+        if (document.querySelector(`input[aria-owns="${CSS.escape(container.id)}"]`)) return true;
+      }
+
+      // Check parent wrapper
+      const parentWrap = container.closest('[class*="combo"], [class*="select"], [class*="lookup"], [class*="picker"]');
+      if (parentWrap && parentWrap.querySelector('input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"])')) return true;
+
+      // Sometimes the input is a preceding sibling
+      let prev = container.previousElementSibling;
+      while (prev) {
+        if (prev.tagName && prev.tagName.toLowerCase() === 'input' && !['hidden', 'radio', 'checkbox'].includes(prev.type)) return true;
+        if (prev.querySelector && prev.querySelector('input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"])')) return true;
+        prev = prev.previousElementSibling;
+      }
+
+      return false;
     }
 
     static findNearbyLabel(el) {
@@ -240,7 +265,20 @@
       );
     }
 
+    static isTabCollectionMenuItem(el) {
+      // Detects elements belonging to the Tab Collection Menu.
+      // An element is a Tab Collection Menu Item when it — or any of its
+      // ancestors — carries the attribute data-corgix-internal="MENU-ITEM".
+      // This works regardless of element type, extra CSS classes, or nesting.
+      return !!(
+        el.getAttribute('data-corgix-internal') === 'MENU-ITEM' ||
+        el.closest('[data-corgix-internal="MENU-ITEM"]')
+      );
+    }
+
     static isInsideVeevaDropdown(el) {
+      // Tab Collection Menu items must never be treated as dropdown selections
+      if (DOMUtils.isTabCollectionMenuItem(el)) return false;
       // Navbar items are never dropdown selections — guard first
       if (DOMUtils.isNavbarItem(el)) return false;
 
@@ -256,10 +294,10 @@
 
     static findInteractiveParent(node) {
       if (!node) return null;
-      const clickable = node.closest('button, a, [role="button"], [role="tab"], [role="link"], [role="menuitem"], [role="option"], [class*="btn"], [class*="tab"], [onclick], [data-action], [data-test]');
-      if (clickable) return clickable;
       const tabColBtn = node.closest('[class*="tabcollection-menu-button"], [aria-label*="Tab Collection" i]');
       if (tabColBtn) return tabColBtn;
+      const clickable = node.closest('button, a, [role="button"], [role="tab"], [role="link"], [role="menuitem"], [role="option"], [class*="btn"], [class*="tab"], [onclick], [data-action], [data-test]');
+      if (clickable) return clickable;
 
       let curr = node;
       for (let i = 0; i < 6 && curr && curr !== document.body; i++) {
@@ -475,8 +513,18 @@
       return !el || el.id === '__veeva-recorder-ui' || el.closest('#__veeva-recorder-ui') || el.id === '__veeva-recorder-toast' || el.id === '__veeva-recorder-input';
     }
 
-    buildStep(el, eventType, typedValue) {
+    buildStep(el, eventType, typedValue, originalTarget) {
       const type = DOMUtils.classifyElement(el);
+      
+      // Filter out decorative/meaningless step captures:
+      // If type resolves to null AND the original target was an SVG/path/icon element, return null to skip.
+      const isSvgOrIcon = originalTarget && (
+        ['svg', 'path', 'circle', 'rect', 'g', 'defs', 'use', 'polygon', 'polyline', 'ellipse', 'line'].includes(originalTarget.tagName?.toLowerCase()) ||
+        originalTarget.closest('svg') ||
+        originalTarget.classList?.contains('icon') ||
+        originalTarget.tagName?.toLowerCase() === 'i'
+      );
+      if (!type && isSvgOrIcon) return null;
       if (!type) return null;
 
       const ids = DOMUtils.getIdentifiers(el);
@@ -487,8 +535,28 @@
       let bestLabel = label || placeholder || ids.ariaLabel || ids.name || ids.id || DOMUtils.findNearbyLabel(el);
       if (!bestLabel && DOMUtils.isNoisy(visibleText)) bestLabel = ids.name || ids.id || 'input field';
 
-      // Reject the step entirely if the resolved label is noisy (e.g. session-timeout banners)
-      if (bestLabel && DOMUtils.isNoisy(bestLabel)) return null;
+      // Known container label fallback if label is missing/generic
+      const blocklist = ['input field', 'icon', 'svg', 'element'];
+      let hasMeaningfulLabel = bestLabel && !blocklist.includes(bestLabel.toLowerCase().trim());
+      
+      if (!hasMeaningfulLabel) {
+        const tabColContainer = el.closest('[class*="tabcollection"]');
+        if (tabColContainer) {
+          bestLabel = 'Tab Collections';
+          hasMeaningfulLabel = true;
+        } else {
+          const userProfileContainer = el.closest('[class*="userprofile"], [class*="user-profile"]');
+          if (userProfileContainer) {
+            bestLabel = 'User Profile';
+            hasMeaningfulLabel = true;
+          }
+        }
+      }
+
+      // Reject the step entirely if the resolved label is generic or noisy (e.g. session-timeout banners)
+      if (!bestLabel || blocklist.includes(bestLabel.toLowerCase().trim()) || DOMUtils.isNoisy(bestLabel)) {
+        return null;
+      }
 
       const tag = el.tagName.toLowerCase();
       const action = (eventType === 'input' || (['input', 'textarea'].includes(tag) && typedValue !== undefined) || (el.isContentEditable && typedValue !== undefined)) ? 'enter' : (tag === 'select' || eventType === 'change' || eventType === 'select-click') ? 'select' : 'click';
@@ -498,7 +566,7 @@
         action,
         element: Object.fromEntries(Object.entries({
           type, tag,
-          label: bestLabel || (DOMUtils.isNoisy(visibleText) ? null : visibleText.slice(0, Config.MAX_LABEL_LENGTH)),
+          label: bestLabel,
           placeholder,
           inputValue: typedValue !== undefined ? typedValue : null,
           selectedValue: (eventType === 'change' && tag === 'select') ? el.options[el.selectedIndex]?.text || el.value : null
@@ -508,7 +576,12 @@
       };
 
       const ddCtx = DOMUtils.getDropdownContext(el);
-      if (ddCtx && ddCtx !== bestLabel) step.dropdownParent = ddCtx;
+      if (ddCtx && ddCtx !== bestLabel) {
+        step.dropdownParent = ddCtx;
+        step.element.hasInput = DOMUtils.hasDropdownInput(el);
+      } else if (tag === 'select') {
+        step.element.hasInput = false;
+      }
 
       step._kb = this.generateKBEntry(step);
       return step;
@@ -523,6 +596,44 @@
         kbAction = 'select';
       }
 
+      // ── Tab Collection Menu fast-path (Priority 1) ─────────────────────
+      // Elements with context='tab_collection_menu' always produce a
+      // deterministic output: "Click on <label> from tab collection menu."
+      // The context field is forwarded to the server to skip the LLM.
+      if (el.context === 'tab_collection_menu') {
+        const menuLabel = label;
+        let menuSlug = (menuLabel || 'menu').toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
+        const input = { action: 'click', label: menuLabel, context: 'tab_collection_menu' };
+        if (step.userStep) input.userStep = step.userStep;
+        if (step.identifiers?.id) input.elementId = step.identifiers.id;
+        if (step.identifiers?.ariaLabel) input.ariaLabel = step.identifiers.ariaLabel;
+        return {
+          name: `tabmenu_${menuSlug}_veeva`,
+          input,
+          output: `Click on ${menuLabel} from tab collection menu.`,
+        };
+      }
+
+      // ── Navbar fast-path (Priority 2) ──────────────────────────────────
+      // Elements marked as navbar items always produce a deterministic output
+      // in the format: "Click on <label> from navbar."
+      // The context field is forwarded to the server so it can skip the LLM.
+      if (el.context === 'navbar') {
+        const navbarLabel = label;
+        let navSlug = (navbarLabel || 'navbar').toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
+        const input = { action: 'click', label: navbarLabel, context: 'navbar' };
+        if (step.userStep) input.userStep = step.userStep;
+        if (step.identifiers?.id) input.elementId = step.identifiers.id;
+        if (step.identifiers?.ariaLabel) input.ariaLabel = step.identifiers.ariaLabel;
+        return {
+          name: `navbar_${navSlug}_veeva`,
+          input,
+          output: `Click on ${navbarLabel} from navbar.`,
+        };
+      }
+
       const input = { action: kbAction, label };
       if (step.userStep) input.userStep = step.userStep;
 
@@ -533,6 +644,7 @@
       if (kbAction === 'select') {
         input.selectedText = el.selectedValue || el.inputValue || '<<value>>';
         if (step.dropdownParent) input.dropdownLabel = step.dropdownParent;
+        if (el.hasInput) input.hasInput = true;
       }
       if (kbAction === 'click' && step.dropdownParent) {
         input.dropdownLabel = step.dropdownParent;
@@ -552,10 +664,32 @@
       } else if (kbAction === 'select') {
         const selectedVal = el.selectedValue || el.inputValue || 'value';
         const parentCtx = step.dropdownParent || el.label || 'dropdown';
-        output = `Select ${selectedVal} from ${parentCtx}.`;
+        
+        if (parentCtx === 'Tab Collections' || parentCtx === 'User Profile') {
+          output = `Select ${selectedVal} from ${parentCtx}.`;
+          input.label = parentCtx;
+        } else if (el.hasInput) {
+          output = `Enter ${selectedVal} and select ${selectedVal} from '${parentCtx}' dropdown.`;
+        } else {
+          output = `Select ${selectedVal} from '${parentCtx}' dropdown.`;
+        }
       }
 
-      const slug = (label || el.type || 'element').toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
+      let finalLabel = label;
+      if (kbAction === 'select' && step.dropdownParent) {
+        finalLabel = step.dropdownParent;
+      }
+      let slug = (finalLabel || el.type || 'element').toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
+      if (slug === 'tab_collections') slug = 'tab_collection';
+      if (slug === 'user_profiles') slug = 'user_profile';
+
+      if (kbAction === 'select') {
+        const val = el.selectedValue || el.inputValue;
+        if (val) {
+          const valSlug = val.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '_').substring(0, 30);
+          slug = `select_${valSlug}_${slug}`;
+        }
+      }
       return { name: `${slug}_veeva`, input, output };
     }
 
@@ -587,23 +721,43 @@
         }
         const val = this.inputValues.get(el) ?? (el.isContentEditable ? el.innerText : el.value);
         if (!val) return;
-        const step = this.buildStep(el, 'input', val);
+        const step = this.buildStep(el, 'input', val, e.target);
         if (step) this.toast.show(await this.state.addStep(step));
         this.inputValues.delete(el);
       } else if (e.type === 'change' && tag === 'select') {
-        const step = this.buildStep(el, 'change');
+        const step = this.buildStep(el, 'change', undefined, e.target);
         if (step) this.toast.show(await this.state.addStep(step));
       } else if (e.type === 'click' || e.type === 'mousedown') {
         if (isInputEl && tag !== 'select') return this.trackInput(el);
         if (tag === 'input' && ['checkbox', 'radio'].includes(el.type)) {
           if (e.type === 'mousedown') return;
-          const step = this.buildStep(el, 'click', el.checked ? 'checked' : 'unchecked');
+          const step = this.buildStep(el, 'click', el.checked ? 'checked' : 'unchecked', e.target);
           if (step) this.toast.show(await this.state.addStep(step));
           return;
         }
+        // Priority 1: Tab Collection Menu items (data-corgix-internal="MENU-ITEM")
+        // Must be checked BEFORE navbar to honour the classification hierarchy.
+        // Use e.target.closest() so nested child clicks are caught correctly.
+        const tabMenuEl = e.target.closest('[data-corgix-internal="MENU-ITEM"]') ||
+          (el.getAttribute && el.getAttribute('data-corgix-internal') === 'MENU-ITEM' ? el : null);
+        if (tabMenuEl) {
+          // Extract visible label from the menu item container (handles nested children)
+          const rawText = DOMUtils.cleanText(tabMenuEl.innerText || tabMenuEl.textContent || '');
+          const menuLabel = (rawText && !DOMUtils.isNoisy(rawText)) ? rawText : DOMUtils.resolveLabel(el);
+          if (menuLabel) {
+            const step = this.buildStep(el, 'click', undefined, e.target);
+            if (step) {
+              step.element.label = menuLabel;
+              step.element.context = 'tab_collection_menu';
+              step._kb = this.generateKBEntry(step);
+              this.toast.show(await this.state.addStep(step));
+            }
+            return;
+          }
+        }
+        // Priority 2: Navbar links (vv-navbar-link) → always a plain navigation click
         if (DOMUtils.isNavbarItem(el)) {
-          // Navbar links (vv-navbar-link) → always a plain navigation click, never a dropdown select
-          const step = this.buildStep(el, 'click');
+          const step = this.buildStep(el, 'click', undefined, e.target);
           if (step) {
             step.element.context = 'navbar';
             step._kb = this.generateKBEntry(step);
@@ -614,7 +768,7 @@
         if (DOMUtils.isInsideVeevaDropdown(el)) {
           const text = DOMUtils.cleanText(el.innerText || el.textContent || '');
           if (text && !DOMUtils.isNoisy(text)) {
-            const step = this.buildStep(el, 'select-click');
+            const step = this.buildStep(el, 'select-click', undefined, e.target);
             if (step) {
               step.action = 'select';
               step.element.selectedValue = text;
@@ -626,7 +780,7 @@
             }
           }
         }
-        const step = this.buildStep(el, 'click');
+        const step = this.buildStep(el, 'click', undefined, e.target);
         if (step) this.toast.show(await this.state.addStep(step));
       }
     }
@@ -639,7 +793,7 @@
         if (tag === 'input' && ['checkbox', 'radio'].includes(el.type)) return;
         const val = this.inputValues.get(el) ?? el.value;
         if (!val) return;
-        const step = this.buildStep(el, 'input', val);
+        const step = this.buildStep(el, 'input', val, e.target);
         if (step) {
           this.toast.show(await this.state.addStep(step));
           this.capturedInputs.add(el);

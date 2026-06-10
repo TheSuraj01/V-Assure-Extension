@@ -1,5 +1,5 @@
 """
-Dynamic-grade dynamic configuration loader.
+Production-grade configuration loader.
 
 Features:
 - Singleton cached config manager
@@ -12,9 +12,12 @@ Features:
 - Dynamic workflow template support
 - Runtime cache support
 - Dynamic pattern support
+- Encrypted secrets integration
+- Environment-specific configuration
 """
 
 import json
+import os
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
@@ -39,15 +42,15 @@ PATTERN_EXCEL_PATH = (
 
 
 # ─────────────────────────────────────────────────────────────
-# Default Dynamic Configuration
+# Default Configuration
 # ─────────────────────────────────────────────────────────────
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "app": {
         "name": "Veeva Vault Step Generator",
         "version": "3.0.0",
-        "debug": True,
-        "environment": "development",
+        "debug": False,
+        "environment": "production",
     },
 
     "model": {
@@ -227,20 +230,21 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 class ConfigManager:
     """
-    Dynamic-grade dynamic configuration manager.
+    Production-grade configuration manager.
+
+    Merges defaults → config.json → encrypted secrets → env overrides.
     """
 
     def __init__(
         self,
         config_path: Optional[Path] = None,
     ):
-
         self.config_path = (
             config_path or CONFIG_PATH
         )
 
         self._config: Dict[str, Any] = {}
-
+        self._secrets: Dict[str, Any] = {}
         self.runtime_cache: Dict[str, Any] = {}
 
         self.reload()
@@ -254,12 +258,10 @@ class ConfigManager:
     ) -> Dict[str, Any]:
 
         if not self.config_path.exists():
-
             logger.warning(
                 "Config file not found | using defaults | %s",
                 self.config_path,
             )
-
             return deepcopy(DEFAULT_CONFIG)
 
         try:
@@ -294,28 +296,64 @@ class ConfigManager:
             logger.exception(
                 "Failed loading configuration"
             )
-
             logger.warning(
                 "Falling back to default configuration"
             )
-
             return deepcopy(DEFAULT_CONFIG)
+
+    def _load_secrets(self) -> Dict[str, Any]:
+        """
+        Load secrets from encrypted file or environment variables.
+
+        Priority:
+        1. Encrypted config file (if CONFIG_FILE_PATH exists)
+        2. Environment variables (fallback)
+        """
+        try:
+            from config.encrypted_config import (
+                load_encrypted_config,
+                load_secrets_from_env,
+            )
+
+            # Try encrypted config first
+            secrets = load_encrypted_config()
+            if secrets:
+                logger.info("Secrets loaded from encrypted configuration")
+                return secrets
+
+            # Fall back to environment variables
+            secrets = load_secrets_from_env()
+            if secrets:
+                logger.info("Secrets loaded from environment variables")
+            else:
+                logger.warning("No secrets found in encrypted config or environment")
+
+            return secrets
+
+        except Exception:
+            logger.exception("Failed to load secrets — continuing without them")
+            return {}
 
     # ─────────────────────────────────────────────────────
     # Public Methods
     # ─────────────────────────────────────────────────────
 
-    def reload(
-        self,
-    ) -> None:
+    def reload(self) -> None:
+        self._config = self._read_config_file()
+        self._secrets = self._load_secrets()
 
-        self._config = (
-            self._read_config_file()
-        )
+        # Apply environment overrides
+        env = os.getenv("APP_ENV", "").strip()
+        if env:
+            self._config.setdefault("app", {})["environment"] = env
 
-        logger.info(
-            "Configuration reloaded"
-        )
+        debug_env = os.getenv("DEBUG", "").strip().lower()
+        if debug_env in ("true", "1", "yes"):
+            self._config.setdefault("app", {})["debug"] = True
+        elif debug_env in ("false", "0", "no"):
+            self._config.setdefault("app", {})["debug"] = False
+
+        logger.info("Configuration reloaded")
 
     def get(
         self,
@@ -328,7 +366,6 @@ class ConfigManager:
         Example:
             config.get("model.name")
         """
-
         if not key_path:
             return default
 
@@ -336,67 +373,52 @@ class ConfigManager:
 
         try:
             for key in key_path.split("."):
-
-                if not isinstance(
-                    value,
-                    dict,
-                ):
+                if not isinstance(value, dict):
                     return default
-
-                value = value.get(
-                    key,
-                    default,
-                )
-
+                value = value.get(key, default)
                 if value is None:
                     return default
-
             return value
-
         except Exception:
             return default
+
+    def get_secret(
+        self,
+        key: str,
+        default: str = "",
+    ) -> str:
+        """
+        Get a secret value from the loaded secrets.
+
+        Example:
+            config.get_secret("groq_api_key")
+        """
+        return self._secrets.get(key, default)
 
     def set(
         self,
         key_path: str,
         value: Any,
     ) -> None:
-        """
-        Dynamically update config value in memory.
-        """
-
+        """Dynamically update config value in memory."""
         keys = key_path.split(".")
-
         current = self._config
 
         for key in keys[:-1]:
-
             if (
                 key not in current
-                or not isinstance(
-                    current[key],
-                    dict,
-                )
+                or not isinstance(current[key], dict)
             ):
                 current[key] = {}
-
             current = current[key]
 
         current[keys[-1]] = value
 
-    def get_all(
-        self,
-    ) -> Dict[str, Any]:
-
+    def get_all(self) -> Dict[str, Any]:
         return deepcopy(self._config)
 
-    def save(
-        self,
-    ) -> None:
-        """
-        Persist config to disk.
-        """
-
+    def save(self) -> None:
+        """Persist config to disk."""
         try:
             with open(
                 self.config_path,
@@ -409,15 +431,9 @@ class ConfigManager:
                     indent=2,
                     ensure_ascii=False,
                 )
-
-            logger.info(
-                "Configuration saved successfully"
-            )
-
+            logger.info("Configuration saved successfully")
         except Exception:
-            logger.exception(
-                "Failed saving configuration"
-            )
+            logger.exception("Failed saving configuration")
 
     # ─────────────────────────────────────────────────────
     # Runtime Cache
@@ -428,7 +444,6 @@ class ConfigManager:
         key: str,
         value: Any,
     ) -> None:
-
         self.runtime_cache[key] = value
 
     def get_runtime_cache(
@@ -436,124 +451,65 @@ class ConfigManager:
         key: str,
         default: Any = None,
     ) -> Any:
-
-        return self.runtime_cache.get(
-            key,
-            default,
-        )
+        return self.runtime_cache.get(key, default)
 
     # ─────────────────────────────────────────────────────
     # Dynamic Pattern Helpers
     # ─────────────────────────────────────────────────────
 
-    def get_pattern_excel_path(
-        self,
-    ) -> Path:
-
+    def get_pattern_excel_path(self) -> Path:
         return PATTERN_EXCEL_PATH
 
-    def get_dynamic_patterns(
-        self,
-    ) -> list:
-
-        return self.get_runtime_cache(
-            "dynamic_patterns",
-            [],
-        )
+    def get_dynamic_patterns(self) -> list:
+        return self.get_runtime_cache("dynamic_patterns", [])
 
     # ─────────────────────────────────────────────────────
     # Section Helpers
     # ─────────────────────────────────────────────────────
 
-    def get_model_config(
-        self,
-    ) -> Dict[str, Any]:
+    def get_model_config(self) -> Dict[str, Any]:
+        return self.get("model", {})
 
-        return self.get(
-            "model",
-            {},
-        )
+    def get_generation_config(self) -> Dict[str, Any]:
+        return self.get("generation", {})
 
-    def get_generation_config(
-        self,
-    ) -> Dict[str, Any]:
+    def get_rag_config(self) -> Dict[str, Any]:
+        return self.get("rag", {})
 
-        return self.get(
-            "generation",
-            {},
-        )
+    def get_validation_config(self) -> Dict[str, Any]:
+        return self.get("validation", {})
 
-    def get_rag_config(
-        self,
-    ) -> Dict[str, Any]:
+    def get_prompt_config(self) -> Dict[str, Any]:
+        return self.get("prompt", {})
 
-        return self.get(
-            "rag",
-            {},
-        )
+    def get_templates(self) -> Dict[str, Any]:
+        return self.get("prompt.step_patterns", {})
 
-    def get_validation_config(
-        self,
-    ) -> Dict[str, Any]:
+    def get_actions(self) -> Dict[str, Any]:
+        return self.get("actions", {})
 
-        return self.get(
-            "validation",
-            {},
-        )
-
-    def get_prompt_config(
-        self,
-    ) -> Dict[str, Any]:
-
-        return self.get(
-            "prompt",
-            {},
-        )
-
-    def get_templates(
-        self,
-    ) -> Dict[str, Any]:
-
-        return self.get(
-            "prompt.step_patterns",
-            {},
-        )
-
-    def get_actions(
-        self,
-    ) -> Dict[str, Any]:
-
-        return self.get(
-            "actions",
-            {},
-        )
-
-    def get_forbidden_words(
-        self,
-    ) -> list:
-
-        return self.get(
-            "prompting.forbidden_words",
-            [],
-        )
+    def get_forbidden_words(self) -> list:
+        return self.get("prompting.forbidden_words", [])
 
     # ─────────────────────────────────────────────────────
     # Properties
     # ─────────────────────────────────────────────────────
 
     @property
-    def path(
-        self,
-    ) -> Path:
-
+    def path(self) -> Path:
         return self.config_path
 
     @property
-    def exists(
-        self,
-    ) -> bool:
-
+    def exists(self) -> bool:
         return self.config_path.exists()
+
+    @property
+    def is_debug(self) -> bool:
+        return self.get("app.debug", False)
+
+    @property
+    def environment(self) -> str:
+        return self.get("app.environment", "production")
 
 
 # ─────────────────────────────────────────────────────────────
@@ -562,20 +518,13 @@ class ConfigManager:
 
 @lru_cache(maxsize=1)
 def get_config() -> ConfigManager:
-    """
-    Get singleton config manager.
-    """
-
+    """Get singleton config manager."""
     return ConfigManager()
 
 
 def reload_config() -> ConfigManager:
-    """
-    Force reload config.
-    """
-
+    """Force reload config."""
     get_config.cache_clear()
-
     return get_config()
 
 

@@ -1,5 +1,92 @@
-veeva-backend\__pycache__
-venv
-veeva-backend\.env
-*.env
-veeva-backend\outputs
+# ═══════════════════════════════════════════════════════════════
+# V-Assure .gitignore — Production
+# ═══════════════════════════════════════════════════════════════
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.whl
+
+# ── Virtual Environments ─────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+.conda/
+
+# ── Environment & Secrets ────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.enc
+config.enc
+secrets.json
+*.secret
+
+# ── IDE / Editor ─────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.code-workspace
+
+# ── OS Files ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+.Spotlight-V100
+.Trashes
+
+# ── Runtime / Generated Output ───────────────────────────────
+server/outputs/*.txt
+server/outputs/*.json
+!server/outputs/.gitkeep
+*.log
+*.pid
+logs/
+
+# ── Knowledge Base Data (loaded at runtime) ──────────────────
+server/data/*.json
+!server/data/.gitkeep
+
+# ── Pattern Cache ─────────────────────────────────────────────
+server/config/patterns_cache.json
+server/config/patterns_cache.tmp
+server/config/cache/
+
+# ── Testing Artifacts ─────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+.tox/
+
+# ── Docker ────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Node (client extension dev tools) ────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Misc ──────────────────────────────────────────────────────
+*.bak
+*.orig
+*.tmp
+.gemini/

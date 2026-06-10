@@ -2,8 +2,8 @@
     "app": {
         "name": "Veeva Vault Step Generator",
         "version": "3.0.0",
-        "debug": true,
-        "environment": "development"
+        "debug": false,
+        "environment": "production"
     },
     "model": {
         "name": "openai/meta-llama/Llama-3.1-8B-Instruct",
@@ -219,7 +219,10 @@
                 "Enter '{value}' in the {field_name} TextArea Field."
             ],
             "dropdown_select": [
-                "Select <<{option}>> from the {label} dropdown."
+                "Select <<{option}>> from '{label}' dropdown."
+            ],
+            "dropdown_search_select": [
+                "Enter <<{value}>> and select <<{value}>> from '{label}' dropdown."
             ],
             "navigate_to": [
                 "Navigate to {label}."
@@ -257,15 +260,9 @@
         "task_instruction": "Generate dynamic-grade Veeva Vault automation steps following the exact dynamic workflow patterns and formatting rules.",
         "output_instruction": "Generate only the final automation step."
     },
-    "microsoft": {
-        "tenant_id": "",
-        "client_id": "",
-        "client_secret": "",
-        "sharing_url": "",
-        "drive_id": "",
-        "item_id": "",
-        "file_path": "",
-        "site_id": ""
+    "s3": {
+        "key": "dynamic_step_patterns.xlsx",
+        "region": "us-east-1"
     },
     "logging": {
         "level": "INFO",
