@@ -7,18 +7,20 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
 - **Intelligent Recording:** Capture clicks, inputs, and navigations directly within Veeva Vault.
 - **AI-Powered Generation:** Transform raw UI interactions into polished test scripts using state-of-the-art LLMs.
 - **Enhanced RAG Engine:** Utilizes a custom Knowledge Base (KB) to ensure generated scripts follow established patterns and terminology.
+- **Dynamic S3 Templates:** Seamless integration with S3-compatible storage for runtime loading and validation of Excel step-patterns without requiring application restarts.
+- **Production-Grade Security:** AES-256-GCM encrypted configuration loading, strict origin-based CORS policies, and constant-time string comparisons for admin endpoints.
+- **Optimized Logging:** Built-in redaction of sensitive credentials and keys to prevent data leaks.
 - **Multi-Provider Support:** Seamlessly switch between LLM providers like **Groq**, **AWS Bedrock**, or **Local** servers via LiteLLM.
 - **Real-time Streaming:** View script generation progress in real-time with Server-Sent Events (SSE).
-- **Session Management:** Track, store, and download your generated scripts in both TXT and JSON formats.
-- **Docker Ready:** Easy deployment using Docker and Docker Compose.
+- **Enterprise Docker Support:** Easy, secure deployment using security-hardened, multi-stage Docker builds running under non-root users.
 
 ---
 
 ## 🛠️ Project Structure
 
-- **`veeva-scraper/`**: The Chrome Extension (Manifest v3) responsible for UI recording and interacting with the backend.
-- **`veeva-backend/`**: The FastAPI server handling the logic for script generation, RAG, and session management.
-- **`docker-compose.yml`**: Orchestration for running both services in a containerized environment.
+- **`client/`**: The Chrome Extension (Manifest v3) responsible for UI recording and interacting with the backend.
+- **`server/`**: The FastAPI server handling the logic for script generation, RAG, encrypted configuration, and session management.
+- **`docker-compose.yml`**: Orchestration for running the backend services in a containerized, production-ready environment.
 
 ---
 
@@ -26,15 +28,15 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.11+
 - Google Chrome Browser
-- Docker & Docker Compose (optional)
+- Docker & Docker Compose (optional, for containerized deployments)
 
 ### Backend Setup
 
 1. Navigate to the backend directory:
    ```bash
-   cd veeva-backend
+   cd server
    ```
 2. Create a virtual environment and install dependencies:
    ```bash
@@ -42,12 +44,18 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
-3. Configure your environment variables in a `.env` file:
-   ```env
-   GROQ_API_KEY=your_groq_api_key
-   # Optional: BEDROCK_CREDENTIALS, LOCAL_API_BASE, etc.
+3. Generate your AES encryption key and encrypt your configuration secrets:
+   ```bash
+   # Generate a 64-hex-character AES key
+   python -c "import os; print(os.urandom(32).hex())"
+   
+   # Set the key as an environment variable
+   export CONFIG_ENCRYPTION_KEY="your_generated_hex_key"
+   
+   # Encrypt your secrets (requires a secrets.json with groq_api_key, etc.)
+   python -m config.encrypted_config encrypt secrets.json config.enc
    ```
-4. Start the server:
+4. Start the server (Development mode):
    ```bash
    uvicorn main:app --reload
    ```
@@ -57,14 +65,15 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
 1. Open Chrome and navigate to `chrome://extensions/`.
 2. Enable **Developer mode** in the top right corner.
 3. Click **Load unpacked**.
-4. Select the `veeva-scraper` folder from this repository.
+4. Select the `client` folder from this repository.
 5. The V-Assure icon should now appear in your browser's extension bar.
 
 ### Using Docker
 
-To run the entire suite using Docker:
+To run the entire suite securely using Docker:
 ```bash
-docker-compose up --build
+# Ensure CONFIG_ENCRYPTION_KEY is set in your environment
+docker-compose up -d --build
 ```
 
 ---
@@ -81,7 +90,7 @@ docker-compose up --build
 ## 🔧 Technical Stack
 
 - **Frontend:** HTML5, CSS3, Vanilla JavaScript, Chrome Extension API (v3).
-- **Backend:** Python, FastAPI, Pydantic, LiteLLM.
+- **Backend:** Python, FastAPI, Pydantic, LiteLLM, Cryptography (AES-256-GCM).
 - **AI/ML:** RAG (Custom implementation with TF-IDF/BM25), LLM Integration (Groq, Bedrock).
 - **DevOps:** Docker, Docker Compose.
 
