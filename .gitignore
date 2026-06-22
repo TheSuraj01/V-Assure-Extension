@@ -29,8 +29,6 @@ ENV/
 *.key
 *.crt
 *.enc
-config.enc
-secrets.json
 *.secret
 
 # ── IDE / Editor ─────────────────────────────────────────────

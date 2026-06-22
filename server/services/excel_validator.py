@@ -22,10 +22,6 @@ from utils import setup_logger
 
 logger = setup_logger(__name__)
 
-# ─────────────────────────────────────────────────────────────
-# Constants
-# ─────────────────────────────────────────────────────────────
-
 SHEET_NAME = "step_patterns"
 
 REQUIRED_COLUMNS = {
@@ -61,10 +57,6 @@ VALID_ACTIONS = {
 }
 
 
-# ─────────────────────────────────────────────────────────────
-# Dynamic Excel Validator
-# ─────────────────────────────────────────────────────────────
-
 class DynamicExcelValidator:
     """
     Dynamic Excel validation engine.
@@ -76,10 +68,6 @@ class DynamicExcelValidator:
     ):
 
         self.excel_path = excel_path
-
-    # ─────────────────────────────────────────────────────
-    # Public Validation Method
-    # ─────────────────────────────────────────────────────
 
     def validate(
         self,
@@ -156,10 +144,6 @@ class DynamicExcelValidator:
         )
 
         return True
-
-    # ─────────────────────────────────────────────────────
-    # Internal Validation Methods
-    # ─────────────────────────────────────────────────────
 
     def _validate_sheet_exists(
         self,
@@ -284,10 +268,6 @@ class DynamicExcelValidator:
             )
 
         return row_data
-
-    # ─────────────────────────────────────────────────────
-    # Individual Validators
-    # ─────────────────────────────────────────────────────
 
     def _validate_pattern_id(
         self,
@@ -440,10 +420,6 @@ class DynamicExcelValidator:
                 f"'{priority}' at row {row_index}"
             )
 
-
-# ─────────────────────────────────────────────────────────────
-# Helper Function
-# ─────────────────────────────────────────────────────────────
 
 def validate_dynamic_excel(
     excel_path: Path,

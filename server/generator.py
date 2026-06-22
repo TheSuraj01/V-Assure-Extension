@@ -99,6 +99,16 @@ async def safe_acompletion(
         kwargs["custom_llm_provider"] = "openai"
         provider = "openai"
 
+    # When routing to a custom/local OpenAI-compatible endpoint (api_base is set),
+    # the model name must NOT carry the "openai/" prefix — litellm treats that
+    # prefix as a signal to route to real OpenAI servers, ignoring api_base.
+    if provider == "openai":
+        api_base_val = kwargs.get("api_base", "")
+        if api_base_val and model_name.startswith("openai/"):
+            stripped = model_name[len("openai/"):]
+            kwargs["model"] = stripped
+            model_name = stripped
+
     if provider and provider != "bedrock" and "/" not in model_name:
         kwargs["model"] = f"{provider}/{model_name}"
 
@@ -300,7 +310,6 @@ def validate_output(
         )
     )
 
-    # RAG/template compatibility: for select actions, also allow enter action verbs (e.g. "Enter...")
     if action.lower() == "select":
         expected_verbs = expected_verbs + ACTION_VERBS.get("enter", [])
 
@@ -322,7 +331,6 @@ def validate_output(
         term = forbidden.strip().lower()
         if not term:
             continue
-        # Use word boundaries for alphabetic/alphanumeric forbidden terms to prevent partial matching (e.g. "list" matching "li")
         if term.isalnum():
             pattern = rf"\b{re.escape(term)}\b"
             if re.search(pattern, text_lower):
@@ -357,6 +365,18 @@ def validate_output(
             reasons.append(
                 "Value matched"
             )
+
+        if action.lower() in ("enter", "input", "type"):
+            has_wrapped = (
+                f"<<{value.lower()}>>" in text_lower
+                or f"<< {value.lower()} >>" in text_lower
+            )
+            if not has_wrapped:
+                return (
+                    False,
+                    0.0,
+                    f"Missing <<value>> wrapper for enter action (value={value!r})",
+                )
 
     word_count = len(
         text.split()
@@ -443,8 +463,6 @@ def build_enhanced_prompt(
     a guard in case the function is invoked directly elsewhere.
     """
     if is_navbar:
-        # Should have been short-circuited before reaching here, but
-        # return a safe deterministic value just in case.
         return f"Click on {entry.input.label} from navbar."
 
     prompt_config = get_prompt_config()
@@ -468,18 +486,28 @@ def build_enhanced_prompt(
 
     interaction_block = "\n".join(interaction_lines)
 
-    # ── RAG examples — mandatory context, not optional hints ────────────
     mandatory_context_section = ""
     if rag_examples:
-        examples_text = "\n".join(
-            f"{i + 1}. {example}"
-            for i, example in enumerate(rag_examples)
-        )
+        if rag_examples and isinstance(rag_examples[0], dict):
+            lines = []
+            for i, ex in enumerate(rag_examples, 1):
+                inp_parts = [f"action={ex.get('action', '')}", f"label={ex.get('label', '')}"]
+                if ex.get("value"):
+                    inp_parts.append(f"value={ex['value']}")
+                inp_str = ", ".join(inp_parts)
+                lines.append(f"{i}. [{inp_str}] → {ex.get('output', '')}")
+            examples_text = "\n".join(lines)
+        else:
+            examples_text = "\n".join(
+                f"{i + 1}. {example}"
+                for i, example in enumerate(rag_examples)
+            )
         mandatory_context_section = (
             "\nMANDATORY CONTEXT FROM KNOWLEDGE BASE:\n"
-            "The following examples are verified, authoritative outputs from the "
-            "same system. Your output MUST follow the exact same phrasing, style, "
-            "and structure demonstrated below. Do NOT deviate from these patterns.\n"
+            "The following are verified input→output examples from this system. "
+            "Each entry shows [what triggered the action] → [the exact output produced]. "
+            "Your output MUST follow the exact same phrasing, style, and structure. "
+            "Do NOT deviate from these patterns.\n"
             f"{examples_text}\n"
         )
 
@@ -514,8 +542,6 @@ def build_enhanced_prompt(
         "You are an expert Veeva Vault test automation engineer. Your task is to convert a UI interaction into ONE precise, professional test step."
     )
 
-    # Pre-substitute actual values into the draft so the LLM never sees
-    # literal placeholders like {value} or <<value>>.
     draft = entry.output or ""
     subst = {
         "value":  inp.value or "",
@@ -696,7 +722,6 @@ def try_template_generation(
 # Single Step Generation
 # ─────────────────────────────────────────────────────────────
 
-# Cache config once at import time (instead of re-reading per retry/step)
 _generation_config = get_generation_config()
 _validation_config = get_validation_config()
 _rag_config = config.get("rag", {})
@@ -716,9 +741,6 @@ async def generate_single_step(
     previous_steps = previous_steps or []
     inp = entry.input
 
-    # ── Navbar / Tab Collection Menu fast-path ───────────────────────────
-    # Elements with a recognised context always produce a deterministic output.
-    # No LLM call is needed — the format is fully specified by the context value.
     _CONTEXT_FORMATS = {
         "navbar":              "Click on {label} from navbar.",
         "tab_collection_menu": "Click on {label} from tab collection menu.",
@@ -747,11 +769,6 @@ async def generate_single_step(
             validation_reason=f"{_ctx}_fast_path",
         )
 
-    # ── Template fast-path ───────────────────────────────────────────────
-    # If a template produces a high-confidence result, skip the expensive
-    # LLM call entirely.  This is the single biggest performance win —
-    # most click/enter/select actions have well-defined templates.
-
     template_result = try_template_generation(entry)
 
     if template_result:
@@ -764,7 +781,6 @@ async def generate_single_step(
         )
 
         if t_score >= _template_confidence:
-            # Template is good enough — skip LLM entirely
             return StepResult(
                 step=1,
                 name=entry.name,
@@ -794,7 +810,7 @@ async def generate_single_step(
 
     if rag:
         try:
-            rag_examples = rag.retrieve(
+            rag_examples = rag.retrieve_with_context(
                 action=inp.action,
                 label=inp.label,
                 value=inp.value or inp.selectedText or "",
@@ -918,7 +934,6 @@ async def run_batch_enhanced(
             result.step = index + 1
             return result
 
-    # Run all steps concurrently (bounded by semaphore)
     results = await asyncio.gather(
         *[_generate_one(i, entry) for i, entry in enumerate(entries)]
     )

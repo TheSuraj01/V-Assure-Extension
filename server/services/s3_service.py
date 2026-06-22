@@ -1,70 +1,71 @@
 """
-AWS S3 Service
+S3 API Service
 ~~~~~~~~~~~~~~
 
-Replaces Google Sheets as the source of the dynamic step-patterns Excel file.
+Replaces the boto3 S3 client with HTTP calls to the lightweight S3 proxy API
+running at http://172.27.222.7:8080.
 
-Responsibilities:
-- Download an Excel (.xlsx) object from a private S3 bucket entirely into
-  memory (io.BytesIO) — zero disk I/O.
-- Return the buffer seeked to position 0, ready for openpyxl.load_workbook().
+API Endpoints Used
+------------------
+  GET  /list?prefix=<prefix>        — list objects in the bucket
+  GET  /download?key=<key>          — stream-download a single object
+  POST /upload?key=<key>            — upload a file (multipart/form-data)
+  GET  /find?filename=<name>        — search objects by filename
 
-Credentials are resolved via the standard boto3 credential chain:
-  1. AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY environment variables  (recommended)
-  2. ~/.aws/credentials file
-  3. IAM instance profile / ECS task role  (for cloud deployments)
-
-Configuration (read from environment):
-  AWS_ACCESS_KEY_ID       : AWS access key  (or use IAM role)
-  AWS_SECRET_ACCESS_KEY   : AWS secret key  (or use IAM role)
-  AWS_REGION              : AWS region, e.g. "us-east-1"  (default: us-east-1)
-  S3_BUCKET               : S3 bucket name
-  S3_KEY                  : Object key (path inside bucket), e.g. "dynamic_step_patterns.xlsx"
+Configuration (read from environment)
+--------------------------------------
+  S3_API_BASE_URL  : Base URL of the S3 proxy API  (default: http://172.27.222.7:8080)
+  S3_BUCKET        : Bucket name — used only for logging; the proxy manages the bucket.
+  S3_KEY           : Object key (path inside bucket), e.g. "dynamic_step_patterns.xlsx"
 """
 
 import io
 import os
 
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
+import requests
 
 from utils import setup_logger
 
 logger = setup_logger(__name__)
 
+DEFAULT_API_BASE = "http://172.27.222.7:8080"
+
+# Timeout (seconds) for the download request.  Large Excel files may take
+# a few seconds — 30 s gives plenty of headroom without hanging forever.
+DOWNLOAD_TIMEOUT = 30
+
+# Chunk size for streaming the download body into memory.
+CHUNK_SIZE = 256 * 1024  # 256 KB
+
 
 class S3Service:
     """
-    Downloads an Excel file from AWS S3 into memory.
+    Downloads / uploads Excel files via the S3 proxy HTTP API.
 
     All public methods are static — no instance state is needed.
-    A new boto3 client is created per call so that credential rotation
-    (e.g., via IAM role) is picked up automatically.
+    A new requests.Session is created per call so that connection reuse is
+    scoped to a single operation (safe for multi-worker deployments).
     """
 
     @staticmethod
-    def _make_client():
+    def _base_url() -> str:
+        """Return the configured API base URL (no trailing slash)."""
+        return os.getenv("S3_API_BASE_URL", DEFAULT_API_BASE).rstrip("/")
+
+    @staticmethod
+    def _get(path: str, params: dict = None, stream: bool = False) -> requests.Response:
         """
-        Build a boto3 S3 client from environment variables.
+        Fire a GET request to the S3 proxy API.
 
-        Falls back gracefully: if AWS_ACCESS_KEY_ID is not set, boto3 uses
-        the default credential chain (IAM role, instance profile, etc.).
-
-        Supports S3_ENDPOINT_URL for S3-compatible services (MinIO, etc.).
+        Raises requests.RequestException on network / HTTP errors.
         """
-        region = os.getenv("AWS_REGION", "us-east-1").strip()
-        access_key = os.getenv("AWS_ACCESS_KEY_ID", "").strip()
-        secret_key = os.getenv("AWS_SECRET_ACCESS_KEY", "").strip()
-        endpoint_url = os.getenv("S3_ENDPOINT_URL", "").strip()
+        url = f"{S3Service._base_url()}{path}"
+        logger.debug("[S3-API] GET %s | params=%s", url, params)
+        resp = requests.get(url, params=params, stream=stream, timeout=DOWNLOAD_TIMEOUT)
+        resp.raise_for_status()
+        return resp
 
-        kwargs = {"region_name": region}
-        if access_key and secret_key:
-            kwargs["aws_access_key_id"] = access_key
-            kwargs["aws_secret_access_key"] = secret_key
-        if endpoint_url:
-            kwargs["endpoint_url"] = endpoint_url
-
-        return boto3.client("s3", **kwargs)
+    # Public API  (same interface as the previous boto3 implementation)
 
     @staticmethod
     def download_excel_as_bytes(
@@ -72,14 +73,16 @@ class S3Service:
         key: str,
     ) -> io.BytesIO:
         """
-        Download an S3 object entirely into memory.
+        Download an S3 object entirely into memory via GET /download.
 
         Parameters
         ----------
         bucket : str
-            S3 bucket name (e.g. "my-vassure-bucket").
+            S3 bucket name — used only for log messages; the proxy server
+            manages which bucket to use.
         key : str
-            Object key inside the bucket (e.g. "templates/dynamic_step_patterns.xlsx").
+            Object key inside the bucket
+            (e.g. "templates/dynamic_step_patterns.xlsx").
 
         Returns
         -------
@@ -89,72 +92,72 @@ class S3Service:
         Raises
         ------
         ValueError
-            If bucket or key are empty.
-        ClientError / BotoCoreError
-            If the S3 request fails (permissions, missing object, network, etc.).
+            If key is empty.
+        requests.RequestException
+            If the HTTP request fails (network error, 4xx/5xx, etc.).
         """
-        if not bucket:
-            raise ValueError("S3_BUCKET is not configured")
         if not key:
             raise ValueError("S3_KEY is not configured")
 
         logger.info(
-            "[S3] Downloading Excel | bucket=%s | key=%s",
-            bucket,
+            "[S3-API] Downloading | bucket=%s | key=%s | api=%s",
+            bucket or "(proxy-managed)",
             key,
+            S3Service._base_url(),
         )
 
-        client = S3Service._make_client()
         buffer = io.BytesIO()
 
         try:
-            response = client.get_object(Bucket=bucket, Key=key)
-            content_length = response.get("ContentLength", "?")
-            content_type = response.get("ContentType", "?")
+            resp = S3Service._get("/download", params={"key": key}, stream=True)
+
+            content_length = resp.headers.get("Content-Length", "?")
+            content_type = resp.headers.get("Content-Type", "?")
 
             logger.info(
-                "[S3] Object found | size=%s bytes | content-type=%s",
+                "[S3-API] Download response | size=%s bytes | content-type=%s",
                 content_length,
                 content_type,
             )
 
-            # Stream body in 256 KB chunks to handle large files efficiently
-            body = response["Body"]
-            chunk_size = 256 * 1024  # 256 KB
-            while True:
-                chunk = body.read(chunk_size)
-                if not chunk:
-                    break
-                buffer.write(chunk)
+            for chunk in resp.iter_content(chunk_size=CHUNK_SIZE):
+                if chunk:
+                    buffer.write(chunk)
 
-        except ClientError as exc:
-            error_code = exc.response.get("Error", {}).get("Code", "Unknown")
-            error_msg = exc.response.get("Error", {}).get("Message", str(exc))
+        except requests.HTTPError as exc:
             logger.error(
-                "[S3] Download failed | code=%s | message=%s | bucket=%s | key=%s",
-                error_code,
-                error_msg,
-                bucket,
+                "[S3-API] HTTP error during download | status=%s | key=%s | url=%s",
+                exc.response.status_code if exc.response is not None else "?",
+                key,
+                S3Service._base_url(),
+            )
+            raise
+
+        except requests.ConnectionError:
+            logger.error(
+                "[S3-API] Connection refused — is the S3 proxy running at %s?",
+                S3Service._base_url(),
+            )
+            raise
+
+        except requests.Timeout:
+            logger.error(
+                "[S3-API] Download timed out after %ss | key=%s",
+                DOWNLOAD_TIMEOUT,
                 key,
             )
             raise
 
-        except BotoCoreError as exc:
-            logger.error(
-                "[S3] BotoCore error during download | %s | bucket=%s | key=%s",
-                exc,
-                bucket,
-                key,
-            )
+        except requests.RequestException as exc:
+            logger.error("[S3-API] Download failed | %s | key=%s", exc, key)
             raise
 
         buffer.seek(0)
         downloaded_bytes = buffer.getbuffer().nbytes
 
         logger.info(
-            "[S3] Download complete | bytes=%d | bucket=%s | key=%s",
+            "[S3-API] Download complete | bytes=%d | key=%s",
             downloaded_bytes,
-            bucket,
             key,
         )
 
@@ -166,19 +169,14 @@ class S3Service:
         Convenience wrapper that reads bucket and key from environment variables.
 
         Reads:
-            S3_BUCKET  – bucket name
-            S3_KEY     – object key
+            S3_BUCKET  — bucket name (informational only for this proxy)
+            S3_KEY     — object key
 
-        Raises ValueError if either env var is not set.
+        Raises ValueError if S3_KEY is not set.
         """
         bucket = os.getenv("S3_BUCKET", "").strip()
         key = os.getenv("S3_KEY", "").strip()
 
-        if not bucket:
-            raise ValueError(
-                "S3_BUCKET environment variable is not set. "
-                "Please add it to your .env file."
-            )
         if not key:
             raise ValueError(
                 "S3_KEY environment variable is not set. "
@@ -190,27 +188,149 @@ class S3Service:
     @staticmethod
     def check_object_exists(bucket: str, key: str) -> bool:
         """
-        Quickly check whether an S3 object exists (head_object — no download).
+        Quickly check whether an object exists via GET /find.
 
-        Returns True if the object exists and is accessible, False otherwise.
+        Returns True if the object is found, False otherwise.
+        Never raises — logs warnings on failure.
+        """
+        if not key:
+            logger.warning("[S3-API] check_object_exists called with empty key")
+            return False
+
+        # Extract just the filename portion for the /find search
+        filename = key.split("/")[-1] if "/" in key else key
+
+        try:
+            resp = S3Service._get("/find", params={"filename": filename})
+            data = resp.json()
+            count = data.get("count", 0)
+
+            if count > 0:
+                # Verify an exact key match in the results (not just filename)
+                results = data.get("results", [])
+                matched = any(r.get("key") == key for r in results)
+                if matched:
+                    logger.info("[S3-API] Object exists | key=%s", key)
+                    return True
+                # Filename found but key path differs — treat as not found
+                logger.warning(
+                    "[S3-API] Filename found but no exact key match | filename=%s key=%s",
+                    filename,
+                    key,
+                )
+                return False
+
+            logger.warning("[S3-API] Object not found | key=%s", key)
+            return False
+
+        except requests.HTTPError as exc:
+            logger.warning(
+                "[S3-API] check_object_exists HTTP error | status=%s | key=%s",
+                exc.response.status_code if exc.response is not None else "?",
+                key,
+            )
+            return False
+
+        except requests.RequestException as exc:
+            logger.warning("[S3-API] check_object_exists request failed | %s | key=%s", exc, key)
+            return False
+
+    @staticmethod
+    def upload_file(local_path: str, key: str) -> dict:
+        """
+        Upload a local file to S3 via POST /upload.
+
+        Parameters
+        ----------
+        local_path : str
+            Absolute or relative path to the local file to upload.
+        key : str
+            Destination object key in the S3 bucket.
+
+        Returns
+        -------
+        dict
+            JSON response from the API (e.g. {"message": "Upload successful", ...}).
+
+        Raises
+        ------
+        FileNotFoundError
+            If local_path does not exist.
+        requests.RequestException
+            If the HTTP request fails.
+        """
+        import pathlib
+
+        path = pathlib.Path(local_path)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {local_path}")
+
+        url = f"{S3Service._base_url()}/upload"
+        logger.info("[S3-API] Uploading | local=%s | key=%s", local_path, key)
+
+        with open(path, "rb") as fh:
+            resp = requests.post(
+                url,
+                params={"key": key},
+                files={"file": fh},
+                timeout=DOWNLOAD_TIMEOUT,
+            )
+
+        resp.raise_for_status()
+        data = resp.json()
+
+        logger.info(
+            "[S3-API] Upload complete | key=%s | response=%s",
+            key,
+            data,
+        )
+
+        return data
+
+    @staticmethod
+    def list_files(prefix: str = "") -> dict:
+        """
+        List objects in the S3 bucket via GET /list.
+
+        Parameters
+        ----------
+        prefix : str
+            Optional prefix to filter results (e.g. "templates/").
+
+        Returns
+        -------
+        dict
+            JSON response from the API containing bucket name and object list.
+        """
+        params = {}
+        if prefix:
+            params["prefix"] = prefix
+
+        try:
+            resp = S3Service._get("/list", params=params or None)
+            return resp.json()
+        except requests.RequestException as exc:
+            logger.error("[S3-API] list_files failed | %s", exc)
+            raise
+
+    @staticmethod
+    def find_file(filename: str) -> dict:
+        """
+        Search for a file by name via GET /find.
+
+        Parameters
+        ----------
+        filename : str
+            Filename to search for (e.g. "dynamic_step_patterns.xlsx").
+
+        Returns
+        -------
+        dict
+            JSON response with count and results list.
         """
         try:
-            client = S3Service._make_client()
-            client.head_object(Bucket=bucket, Key=key)
-            logger.info("[S3] Object exists | bucket=%s | key=%s", bucket, key)
-            return True
-        except ClientError as exc:
-            code = exc.response.get("Error", {}).get("Code", "")
-            if code in ("404", "NoSuchKey"):
-                logger.warning(
-                    "[S3] Object not found | bucket=%s | key=%s", bucket, key
-                )
-            else:
-                logger.warning(
-                    "[S3] head_object failed | code=%s | bucket=%s | key=%s",
-                    code, bucket, key,
-                )
-            return False
-        except BotoCoreError as exc:
-            logger.warning("[S3] BotoCore error on head_object | %s", exc)
-            return False
+            resp = S3Service._get("/find", params={"filename": filename})
+            return resp.json()
+        except requests.RequestException as exc:
+            logger.error("[S3-API] find_file failed | %s", exc)
+            raise

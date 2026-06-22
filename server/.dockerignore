@@ -9,7 +9,6 @@
 .env.*
 *.pem
 *.key
-config.enc
 
 # Virtual environment
 venv/

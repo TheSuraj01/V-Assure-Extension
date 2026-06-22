@@ -1,7 +1,7 @@
 {
     "app": {
         "name": "Veeva Vault Step Generator",
-        "version": "3.0.0",
+        "version": "1.0.0",
         "debug": false,
         "environment": "production"
     },
@@ -37,7 +37,11 @@
         "enable_workflow_boost": true,
         "enable_label_similarity": true,
         "enable_value_similarity": true,
-        "candidate_pool_multiplier": 3
+        "candidate_pool_multiplier": 3,
+        "action_boost_score": 2.5,
+        "action_boost_exact_score": 1.5,
+        "bm25_weight": 2.0,
+        "tfidf_weight": 1.0
     },
     "validation": {
         "enabled": true,
@@ -213,22 +217,22 @@
                 "Enter '{value}' in the {field_name} Input Field."
             ],
             "input_with_value": [
-                "Enter <<{value}>> in the {label} input field."
+                "Enter <<{value}>> in {label} Input Field."
             ],
             "textarea_field": [
                 "Enter '{value}' in the {field_name} TextArea Field."
             ],
             "dropdown_select": [
-                "Select <<{option}>> from '{label}' dropdown."
+                "Select <<{option}>> from the {label} dropdown list."
             ],
             "dropdown_search_select": [
-                "Enter <<{value}>> and select <<{value}>> from '{label}' dropdown."
+                "Enter <<{value}>> and select <<{value}>> from the {label} dropdown list."
             ],
             "navigate_to": [
                 "Navigate to {label}."
             ],
             "button_click": [
-                "Click the {label} button."
+                "Click {label} button."
             ],
             "verification": [
                 "Verify that the {element_name} is displayed."

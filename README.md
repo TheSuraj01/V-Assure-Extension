@@ -8,7 +8,7 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
 - **AI-Powered Generation:** Transform raw UI interactions into polished test scripts using state-of-the-art LLMs.
 - **Enhanced RAG Engine:** Utilizes a custom Knowledge Base (KB) to ensure generated scripts follow established patterns and terminology.
 - **Dynamic S3 Templates:** Seamless integration with S3-compatible storage for runtime loading and validation of Excel step-patterns without requiring application restarts.
-- **Production-Grade Security:** AES-256-GCM encrypted configuration loading, strict origin-based CORS policies, and constant-time string comparisons for admin endpoints.
+- **Production-Grade Security:** Strict origin-based CORS policies and constant-time string comparisons for admin endpoints.
 - **Optimized Logging:** Built-in redaction of sensitive credentials and keys to prevent data leaks.
 - **Multi-Provider Support:** Seamlessly switch between LLM providers like **Groq**, **AWS Bedrock**, or **Local** servers via LiteLLM.
 - **Real-time Streaming:** View script generation progress in real-time with Server-Sent Events (SSE).
@@ -19,7 +19,7 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
 ## 🛠️ Project Structure
 
 - **`client/`**: The Chrome Extension (Manifest v3) responsible for UI recording and interacting with the backend.
-- **`server/`**: The FastAPI server handling the logic for script generation, RAG, encrypted configuration, and session management.
+- **`server/`**: The FastAPI server handling the logic for script generation, RAG, and session management.
 - **`docker-compose.yml`**: Orchestration for running the backend services in a containerized, production-ready environment.
 
 ---
@@ -44,16 +44,10 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
-3. Generate your AES encryption key and encrypt your configuration secrets:
+3. Copy and configure your environment file:
    ```bash
-   # Generate a 64-hex-character AES key
-   python -c "import os; print(os.urandom(32).hex())"
-   
-   # Set the key as an environment variable
-   export CONFIG_ENCRYPTION_KEY="your_generated_hex_key"
-   
-   # Encrypt your secrets (requires a secrets.json with groq_api_key, etc.)
-   python -m config.encrypted_config encrypt secrets.json config.enc
+   cp .env.example .env
+   # Fill in GROQ_API_KEY and other required values
    ```
 4. Start the server (Development mode):
    ```bash
@@ -70,9 +64,8 @@ V-Assure is an end-to-end solution designed to streamline the creation of test a
 
 ### Using Docker
 
-To run the entire suite securely using Docker:
+To run the entire suite using Docker:
 ```bash
-# Ensure CONFIG_ENCRYPTION_KEY is set in your environment
 docker-compose up -d --build
 ```
 
@@ -90,7 +83,7 @@ docker-compose up -d --build
 ## 🔧 Technical Stack
 
 - **Frontend:** HTML5, CSS3, Vanilla JavaScript, Chrome Extension API (v3).
-- **Backend:** Python, FastAPI, Pydantic, LiteLLM, Cryptography (AES-256-GCM).
+- **Backend:** Python, FastAPI, Pydantic, LiteLLM.
 - **AI/ML:** RAG (Custom implementation with TF-IDF/BM25), LLM Integration (Groq, Bedrock).
 - **DevOps:** Docker, Docker Compose.
 

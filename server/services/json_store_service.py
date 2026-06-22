@@ -28,10 +28,6 @@ from utils import setup_logger
 
 logger = setup_logger(__name__)
 
-# ─────────────────────────────────────────────────────────────
-# Cache file path
-# ─────────────────────────────────────────────────────────────
-
 def _get_cache_path() -> Path:
     """
     Resolve the path to patterns_cache.json.
@@ -47,10 +43,6 @@ def _get_cache_path() -> Path:
     # level to server/, then into config/
     return Path(__file__).parent.parent / "config" / "patterns_cache.json"
 
-
-# ─────────────────────────────────────────────────────────────
-# Public API
-# ─────────────────────────────────────────────────────────────
 
 def load_patterns() -> Dict[str, Dict[str, Any]]:
     """

@@ -21,10 +21,6 @@ from utils import setup_logger
 
 logger = setup_logger(__name__)
 
-# ─────────────────────────────────────────────────────────────
-# Constants
-# ─────────────────────────────────────────────────────────────
-
 REQUIRED_COLUMNS = {
     "pattern_id",
     "action",
@@ -36,10 +32,6 @@ REQUIRED_COLUMNS = {
 
 SHEET_NAME = "step_patterns"
 
-
-# ─────────────────────────────────────────────────────────────
-# Dynamic Pattern Loader
-# ─────────────────────────────────────────────────────────────
 
 class DynamicPatternLoader:
     """
@@ -57,10 +49,6 @@ class DynamicPatternLoader:
             excel_path
             or self.config.get_pattern_excel_path()
         )
-
-    # ─────────────────────────────────────────────────────
-    # Public Load Method
-    # ─────────────────────────────────────────────────────
 
     def load_patterns(
         self,
@@ -162,10 +150,6 @@ class DynamicPatternLoader:
         )
 
         return patterns
-
-    # ─────────────────────────────────────────────────────
-    # Internal Helpers
-    # ─────────────────────────────────────────────────────
 
     def _extract_headers(
         self,
@@ -389,10 +373,6 @@ class DynamicPatternLoader:
                 f"at row {row_index}"
             )
 
-    # ─────────────────────────────────────────────────────
-    # Runtime Cache Registration
-    # ─────────────────────────────────────────────────────
-
     def register_patterns(
         self,
     ) -> Dict[str, Dict[str, Any]]:
@@ -440,10 +420,6 @@ class DynamicPatternLoader:
 
         return patterns
 
-
-# ─────────────────────────────────────────────────────────────
-# Singleton Helpers
-# ─────────────────────────────────────────────────────────────
 
 def init_patterns() -> Dict[str, Dict[str, Any]]:
     """

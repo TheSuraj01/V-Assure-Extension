@@ -1,21 +1,3 @@
-"""
-Production-grade configuration loader.
-
-Features:
-- Singleton cached config manager
-- Dot notation access
-- Deep merge with defaults
-- Runtime reload support
-- Safe fallback handling
-- Production-safe logging
-- Dynamic prompt configuration support
-- Dynamic workflow template support
-- Runtime cache support
-- Dynamic pattern support
-- Encrypted secrets integration
-- Environment-specific configuration
-"""
-
 import json
 import os
 from copy import deepcopy
@@ -28,10 +10,6 @@ from utils import deep_merge_dicts, setup_logger
 logger = setup_logger(__name__)
 
 
-# ─────────────────────────────────────────────────────────────
-# Paths
-# ─────────────────────────────────────────────────────────────
-
 BASE_DIR = Path(__file__).resolve().parent
 
 CONFIG_PATH = BASE_DIR / "config.json"
@@ -40,10 +18,6 @@ PATTERN_EXCEL_PATH = (
     BASE_DIR / "dynamic_step_patterns.xlsx"
 )
 
-
-# ─────────────────────────────────────────────────────────────
-# Default Configuration
-# ─────────────────────────────────────────────────────────────
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "app": {
@@ -224,15 +198,11 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 
-# ─────────────────────────────────────────────────────────────
-# Config Manager
-# ─────────────────────────────────────────────────────────────
-
 class ConfigManager:
     """
     Production-grade configuration manager.
 
-    Merges defaults → config.json → encrypted secrets → env overrides.
+    Merges defaults → config.json → env secrets → env overrides.
     """
 
     def __init__(
@@ -248,10 +218,6 @@ class ConfigManager:
         self.runtime_cache: Dict[str, Any] = {}
 
         self.reload()
-
-    # ─────────────────────────────────────────────────────
-    # Internal Loaders
-    # ─────────────────────────────────────────────────────
 
     def _read_config_file(
         self,
@@ -303,46 +269,19 @@ class ConfigManager:
 
     def _load_secrets(self) -> Dict[str, Any]:
         """
-        Load secrets from encrypted file or environment variables.
-
-        Priority:
-        1. Encrypted config file (if CONFIG_FILE_PATH exists)
-        2. Environment variables (fallback)
+        Load secrets from environment variables.
         """
         try:
-            from config.encrypted_config import (
-                load_encrypted_config,
-                load_secrets_from_env,
-            )
-
-            # Try encrypted config first
-            secrets = load_encrypted_config()
-            if secrets:
-                logger.info("Secrets loaded from encrypted configuration")
-                return secrets
-
-            # Fall back to environment variables
-            secrets = load_secrets_from_env()
-            if secrets:
-                logger.info("Secrets loaded from environment variables")
-            else:
-                logger.warning("No secrets found in encrypted config or environment")
-
-            return secrets
-
+            from config.encrypted_config import load_secrets_from_env
+            return load_secrets_from_env()
         except Exception:
             logger.exception("Failed to load secrets — continuing without them")
             return {}
-
-    # ─────────────────────────────────────────────────────
-    # Public Methods
-    # ─────────────────────────────────────────────────────
 
     def reload(self) -> None:
         self._config = self._read_config_file()
         self._secrets = self._load_secrets()
 
-        # Apply environment overrides
         env = os.getenv("APP_ENV", "").strip()
         if env:
             self._config.setdefault("app", {})["environment"] = env
@@ -435,10 +374,6 @@ class ConfigManager:
         except Exception:
             logger.exception("Failed saving configuration")
 
-    # ─────────────────────────────────────────────────────
-    # Runtime Cache
-    # ─────────────────────────────────────────────────────
-
     def set_runtime_cache(
         self,
         key: str,
@@ -453,19 +388,11 @@ class ConfigManager:
     ) -> Any:
         return self.runtime_cache.get(key, default)
 
-    # ─────────────────────────────────────────────────────
-    # Dynamic Pattern Helpers
-    # ─────────────────────────────────────────────────────
-
     def get_pattern_excel_path(self) -> Path:
         return PATTERN_EXCEL_PATH
 
     def get_dynamic_patterns(self) -> list:
         return self.get_runtime_cache("dynamic_patterns", [])
-
-    # ─────────────────────────────────────────────────────
-    # Section Helpers
-    # ─────────────────────────────────────────────────────
 
     def get_model_config(self) -> Dict[str, Any]:
         return self.get("model", {})
@@ -491,10 +418,6 @@ class ConfigManager:
     def get_forbidden_words(self) -> list:
         return self.get("prompting.forbidden_words", [])
 
-    # ─────────────────────────────────────────────────────
-    # Properties
-    # ─────────────────────────────────────────────────────
-
     @property
     def path(self) -> Path:
         return self.config_path
@@ -512,10 +435,6 @@ class ConfigManager:
         return self.get("app.environment", "production")
 
 
-# ─────────────────────────────────────────────────────────────
-# Singleton Access
-# ─────────────────────────────────────────────────────────────
-
 @lru_cache(maxsize=1)
 def get_config() -> ConfigManager:
     """Get singleton config manager."""
@@ -527,10 +446,6 @@ def reload_config() -> ConfigManager:
     get_config.cache_clear()
     return get_config()
 
-
-# ─────────────────────────────────────────────────────────────
-# Exports
-# ─────────────────────────────────────────────────────────────
 
 __all__ = [
     "ConfigManager",

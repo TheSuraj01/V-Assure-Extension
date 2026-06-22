@@ -523,6 +523,10 @@ document.getElementById('toggleAdminBtn').addEventListener('click', () => {
 });
 
 document.getElementById('adminSyncBtn').addEventListener('click', async () => {
+  // ── FEATURE DISABLED ── Admin sync is temporarily disabled.
+  // Remove this return and restore the block below to re-enable.
+  return;
+
   const code = document.getElementById('adminCodeInput').value.trim();
   const syncBtn = document.getElementById('adminSyncBtn');
 
@@ -623,6 +627,9 @@ function saveMemoryVar(varName) {
 
 // Memory Store button
 document.getElementById('memStoreBtn').addEventListener('click', async () => {
+  // ── FEATURE DISABLED ── Memory store/fetch is temporarily disabled.
+  return;
+
   const value = document.getElementById('memValue').value.trim();
   const varName = document.getElementById('memVarName').value.trim();
 
@@ -645,6 +652,9 @@ document.getElementById('memStoreBtn').addEventListener('click', async () => {
 
 // Memory Fetch button
 document.getElementById('memFetchBtn').addEventListener('click', async () => {
+  // ── FEATURE DISABLED ── Memory store/fetch is temporarily disabled.
+  return;
+
   const varName = document.getElementById('memVarSelect').value;
 
   if (!varName) {

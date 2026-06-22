@@ -17,10 +17,6 @@ from utils import setup_logger
 logger = setup_logger(__name__)
 
 
-# ─────────────────────────────────────────────────────────────
-# Dynamic Pattern Matcher
-# ─────────────────────────────────────────────────────────────
-
 class DynamicPatternMatcher:
     """
     Dynamic template matcher.
@@ -31,10 +27,6 @@ class DynamicPatternMatcher:
     ):
 
         self.config = get_config()
-
-    # ─────────────────────────────────────────────────────
-    # Public Match Methods
-    # ─────────────────────────────────────────────────────
 
     def match_template(
         self,
@@ -65,9 +57,7 @@ class DynamicPatternMatcher:
 
             return None
 
-        # ─────────────────────────────────────────────
         # Exact template_key match
-        # ─────────────────────────────────────────────
 
         if template_key:
 
@@ -113,9 +103,7 @@ class DynamicPatternMatcher:
             # to let the caller use the correct JSON fallback template.
             return None
 
-        # ─────────────────────────────────────────────
         # Action-based fallback match
-        # ─────────────────────────────────────────────
 
         action_matches = []
 
@@ -168,10 +156,6 @@ class DynamicPatternMatcher:
         )
 
         return None
-
-    # ─────────────────────────────────────────────────────
-    # Template Content Helpers
-    # ─────────────────────────────────────────────────────
 
     def get_template_string(
         self,
@@ -253,10 +237,6 @@ class DynamicPatternMatcher:
             "",
         )
 
-    # ─────────────────────────────────────────────────────
-    # Fallback Support
-    # ─────────────────────────────────────────────────────
-
     def get_template_with_fallback(
         self,
         action: str,
@@ -270,10 +250,6 @@ class DynamicPatternMatcher:
         2. JSON fallback templates
         """
 
-        # ─────────────────────────────────────────────
-        # Dynamic Template
-        # ─────────────────────────────────────────────
-
         dynamic_template = (
             self.get_template_string(
                 action=action,
@@ -284,10 +260,6 @@ class DynamicPatternMatcher:
         if dynamic_template:
 
             return dynamic_template
-
-        # ─────────────────────────────────────────────
-        # JSON Fallback Template
-        # ─────────────────────────────────────────────
 
         json_templates = (
             self.config.get_templates()
@@ -318,10 +290,6 @@ class DynamicPatternMatcher:
 
         return None
 
-
-# ─────────────────────────────────────────────────────────────
-# Singleton Matcher
-# ─────────────────────────────────────────────────────────────
 
 _pattern_matcher_instance = (
     DynamicPatternMatcher()

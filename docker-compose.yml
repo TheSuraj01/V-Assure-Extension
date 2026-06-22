@@ -15,11 +15,7 @@ services:
       - LOG_LEVEL=INFO
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       
-      # Configuration encryption settings
-      - CONFIG_FILE_PATH=/etc/vassure/config.enc
-      - CONFIG_ENCRYPTION_KEY=${CONFIG_ENCRYPTION_KEY:-}
-      
-      # Secrets (passed from host environment if not using config.enc)
+      # Secrets
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       
       # S3 Template storage settings
@@ -27,15 +23,12 @@ services:
       - S3_KEY=${S3_KEY:-}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_REGION_NAME=${AWS_REGION_NAME:-us-east-1}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
       - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
     volumes:
       # Persistent storage for KB index data and session outputs
       - ./server/data:/app/data
       - ./server/outputs:/app/outputs
-      
-      # Mount directory for the encrypted configuration file
-      - ./server/config:/etc/vassure:ro
     deploy:
       resources:
         limits:

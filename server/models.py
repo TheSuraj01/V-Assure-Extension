@@ -1,11 +1,7 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
-# ─────────────────────────────────────────────────────────────
-# Base Model Configuration
-# ─────────────────────────────────────────────────────────────
 
 class AppBaseModel(BaseModel):
     model_config = ConfigDict(
@@ -16,15 +12,11 @@ class AppBaseModel(BaseModel):
     )
 
 
-# ─────────────────────────────────────────────────────────────
-# KB Input
-# ─────────────────────────────────────────────────────────────
-
 class KBInput(AppBaseModel):
     action: str = Field(
         ...,
         description="Action type like click, enter, select",
-    )
+    ) 
 
     label: str = Field(
         ...,
@@ -112,10 +104,6 @@ class KBInput(AppBaseModel):
         return value
 
 
-# ─────────────────────────────────────────────────────────────
-# KB Entry
-# ─────────────────────────────────────────────────────────────
-
 class KBEntry(AppBaseModel):
     name: str = Field(
         ...,
@@ -146,10 +134,6 @@ class KBEntry(AppBaseModel):
             return value.strip()
         return value
 
-
-# ─────────────────────────────────────────────────────────────
-# Step Result
-# ─────────────────────────────────────────────────────────────
 
 class StepResult(AppBaseModel):
     step: int = Field(
@@ -193,9 +177,9 @@ class StepResult(AppBaseModel):
         description="Workflow group",
     )
 
-    rag_context_used: List[str] = Field(
+    rag_context_used: List[Union[str, Dict[str, str]]] = Field(
         default_factory=list,
-        description="Retrieved RAG examples",
+        description="Retrieved RAG examples (strings or structured input→output dicts)",
     )
 
     confidence: Optional[float] = Field(
@@ -210,10 +194,6 @@ class StepResult(AppBaseModel):
         description="Validation explanation",
     )
 
-
-# ─────────────────────────────────────────────────────────────
-# Generate Request
-# ─────────────────────────────────────────────────────────────
 
 class GenerateRequest(AppBaseModel):
     entries: List[KBEntry] = Field(
@@ -291,10 +271,6 @@ class GenerateRequest(AppBaseModel):
         return value
 
 
-# ─────────────────────────────────────────────────────────────
-# Generate Response
-# ─────────────────────────────────────────────────────────────
-
 class GenerateResponse(AppBaseModel):
     session_id: str = Field(
         ...,
@@ -328,10 +304,6 @@ class GenerateResponse(AppBaseModel):
     )
 
 
-# ─────────────────────────────────────────────────────────────
-# Health Response
-# ─────────────────────────────────────────────────────────────
-
 class HealthResponse(AppBaseModel):
     status: str = Field(
         ...,
@@ -355,10 +327,6 @@ class HealthResponse(AppBaseModel):
         description="Groq configuration status",
     )
 
-
-# ─────────────────────────────────────────────────────────────
-# Optional Internal Stats Models
-# ─────────────────────────────────────────────────────────────
 
 class GenerationStats(AppBaseModel):
     total_sessions: int = 0
@@ -384,10 +352,6 @@ class ValidationResponse(AppBaseModel):
     action: str
     label: str
 
-
-# ─────────────────────────────────────────────────────────────
-# Export Helper
-# ─────────────────────────────────────────────────────────────
 
 __all__ = [
     "KBInput",

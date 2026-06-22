@@ -990,8 +990,8 @@
     </div>
   </div>
 
-  <!-- Memory Panel -->
-  <div class="memory-panel" id="memoryPanel">
+  <!-- Memory Panel (disabled) -->
+  <div class="memory-panel" id="memoryPanel" style="display:none;">
     <div class="mem-tabs">
       <button class="mem-tab active" id="memTabStore">🧠 Store</button>
       <button class="mem-tab" id="memTabFetch">📤 Fetch</button>
@@ -1017,8 +1017,8 @@
     </div>
   </div>
 
-  <!-- Admin Sync Panel -->
-  <div class="admin-panel" id="adminPanel">
+  <!-- Admin Sync Panel (disabled) -->
+  <div class="admin-panel" id="adminPanel" style="display:none;">
     <div class="admin-panel-inner">
       <span style="font-size:10px;color:var(--amber);font-weight:700;white-space:nowrap;">⚙ Admin</span>
       <input class="admin-input" type="password" id="adminCodeInput" placeholder="Enter admin code" />
@@ -1032,8 +1032,9 @@
     <button class="footer-btn" id="exportKbBtn">⬇ KB JSON</button>
     <button class="footer-btn" id="downloadMainBtn" style="display:none;color:var(--cyan);border-color:var(--cyan);">⬇
       Prompts</button>
-    <button class="btn-toggle-memory" id="toggleMemoryBtn" title="Memory Store / Fetch">🧠 Memory</button>
-    <button class="btn-toggle-admin" id="toggleAdminBtn" title="Admin Sync">⚙</button>
+    <!-- Memory and Admin toggle buttons disabled -->
+    <button class="btn-toggle-memory" id="toggleMemoryBtn" style="display:none;" title="Memory Store / Fetch">🧠 Memory</button>
+    <button class="btn-toggle-admin" id="toggleAdminBtn" style="display:none;" title="Admin Sync">⚙</button>
     <button class="footer-btn" id="clearBtn" style="margin-left:auto;color:var(--red);">✕ Clear</button>
   </div>
 

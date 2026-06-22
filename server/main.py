@@ -9,6 +9,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+# Load .env file FIRST — before any module that calls os.getenv()
+# override=True ensures .env changes are always picked up on uvicorn reload
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
@@ -58,10 +63,6 @@ DATA_DIR = Path(os.getenv("KB_DATA_DIR", "data"))
 rag = EnhancedRAGEngine()
 
 
-# ─────────────────────────────────────────────────────────────
-# Dynamic Template Initialisation
-# ─────────────────────────────────────────────────────────────
-
 def init_dynamic_patterns(
     sheet_bytes: "io.BytesIO | None" = None,
 ) -> None:
@@ -76,7 +77,6 @@ def init_dynamic_patterns(
     """
     import io  # noqa: F811
 
-    # ── In-memory path (production) ──────────────────────────────────────
     if sheet_bytes is not None:
         logger.info("DYNAMIC TEMPLATE INITIALIZATION (in-memory)")
 
@@ -96,7 +96,6 @@ def init_dynamic_patterns(
             logger.warning("Falling back to JSON templates")
         return
 
-    # ── Disk fallback path ───────────────────────────────────────────────
     try:
         excel_path = config.get_pattern_excel_path()
 
@@ -122,10 +121,6 @@ def init_dynamic_patterns(
         logger.exception("Dynamic template initialization failed")
         logger.warning("Falling back to JSON templates")
 
-
-# ─────────────────────────────────────────────────────────────
-# Session & Stats Management
-# ─────────────────────────────────────────────────────────────
 
 sessions: OrderedDict[str, GenerateResponse] = OrderedDict()
 
@@ -166,17 +161,12 @@ def init_rag() -> None:
     )
 
 
-# ─────────────────────────────────────────────────────────────
-# Application Lifespan
-# ─────────────────────────────────────────────────────────────
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("=" * 70)
     logger.info("APPLICATION STARTUP")
     logger.info("=" * 70)
 
-    # ── Startup Validation ────────────────────────────────────────────────
     logger.info("STARTUP VALIDATION")
     env = config.environment
     debug = config.is_debug
@@ -218,7 +208,6 @@ async def lifespan(app: FastAPI):
     # Initialize RAG
     init_rag()
 
-    # ── Step-pattern templates: 3-tier strategy ──────────────────────────
     logger.info("TEMPLATE INITIALIZATION")
 
     cached_patterns = json_load_patterns()
@@ -271,10 +260,6 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 70)
 
 
-# ─────────────────────────────────────────────────────────────
-# FastAPI Application
-# ─────────────────────────────────────────────────────────────
-
 app = FastAPI(
     title=APP_NAME,
     description=(
@@ -304,10 +289,6 @@ app.add_middleware(
 )
 
 
-# ─────────────────────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────────────────────
-
 def resolve_api_config(req: GenerateRequest):
     """Resolve API key and base URL from request or server config."""
     api_key = req.api_key
@@ -317,7 +298,10 @@ def resolve_api_config(req: GenerateRequest):
         api_key = api_key or config.get_secret("groq_api_key") or os.getenv("GROQ_API_KEY", "")
     elif req.provider == "bedrock":
         api_key = api_key or config.get_secret("bedrock_credentials") or os.getenv("BEDROCK_CREDENTIALS", "")
-    elif req.provider == "local":
+    elif req.provider in ("local", "openai"):
+        # "openai" is treated identically to "local" — the extension may send either.
+        # Always fall back to the server-side LOCAL_API_KEY / LOCAL_API_BASE so that
+        # the request is routed to the custom endpoint, not to real OpenAI servers.
         api_key = api_key or config.get_secret("local_api_key") or os.getenv("LOCAL_API_KEY", "")
         api_base = api_base or config.get_secret("local_api_base") or os.getenv("LOCAL_API_BASE", "")
 
@@ -392,10 +376,6 @@ def save_session(
     logger.info("Session saved successfully | %s", session_id)
 
 
-# ─────────────────────────────────────────────────────────────
-# API Endpoints
-# ─────────────────────────────────────────────────────────────
-
 @app.get("/health", response_model=HealthResponse)
 async def health():
     """Health check endpoint."""
@@ -419,12 +399,10 @@ async def admin_sync_templates(req: AdminSyncRequest):
     """
     Admin-only endpoint: sync templates from S3.
 
-    - Validates the admin code using constant-time comparison.
-    - Downloads the latest Excel file from S3 into memory.
-    - Validates and parses the step-pattern templates.
-    - Saves patterns to patterns_cache.json.
-    - Refreshes the in-process runtime cache.
+    TEMPORARILY DISABLED — remove the early return below to re-enable.
     """
+    raise HTTPException(status_code=503, detail="Admin sync is temporarily disabled")
+
     global config
 
     expected_code = (
@@ -746,10 +724,6 @@ async def validate_output_endpoint(req: ValidateRequest):
     }
 
 
-# ─────────────────────────────────────────────────────────────
-# Graceful Shutdown
-# ─────────────────────────────────────────────────────────────
-
 def _handle_signal(signum, frame):
     """Handle SIGTERM/SIGINT for graceful shutdown."""
     logger.info("Received signal %s — initiating graceful shutdown", signum)
@@ -761,10 +735,6 @@ if os.getenv("_UVICORN_WORKER", "") != "1":
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-
-# ─────────────────────────────────────────────────────────────
-# Main Entry Point
-# ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn

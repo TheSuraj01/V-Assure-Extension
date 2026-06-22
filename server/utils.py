@@ -71,10 +71,6 @@ def setup_logger(
     return logger
 
 
-# ─────────────────────────────────────────────────────────────
-# File Helpers
-# ─────────────────────────────────────────────────────────────
-
 def ensure_directory(
     directory: Path,
 ) -> Path:
@@ -119,10 +115,6 @@ def load_json_file(
         return json.load(file)
 
 
-# ─────────────────────────────────────────────────────────────
-# Session Helpers
-# ─────────────────────────────────────────────────────────────
-
 def generate_session_name(
     prefix: Optional[str] = None,
 ) -> str:
@@ -142,10 +134,6 @@ def generate_session_name(
 
     return timestamp
 
-
-# ─────────────────────────────────────────────────────────────
-# Text Helpers
-# ─────────────────────────────────────────────────────────────
 
 def normalize_whitespace(
     text: str,
@@ -171,10 +159,6 @@ def truncate_text(
 
     return text[: max_length - 3] + "..."
 
-
-# ─────────────────────────────────────────────────────────────
-# Report Builders
-# ─────────────────────────────────────────────────────────────
 
 def build_step_script(
     steps: List[Any],
@@ -337,10 +321,6 @@ def build_text_report(
     return "\n".join(lines)
 
 
-# ─────────────────────────────────────────────────────────────
-# Statistics Helpers
-# ─────────────────────────────────────────────────────────────
-
 def calculate_average_confidence(
     steps: List[Any],
 ) -> float:
@@ -360,10 +340,6 @@ def calculate_average_confidence(
         3,
     )
 
-
-# ─────────────────────────────────────────────────────────────
-# Dictionary Helpers
-# ─────────────────────────────────────────────────────────────
 
 def deep_merge_dicts(
     base: Dict[str, Any],
@@ -389,10 +365,6 @@ def deep_merge_dicts(
 
     return merged
 
-
-# ─────────────────────────────────────────────────────────────
-# Exported Helpers
-# ─────────────────────────────────────────────────────────────
 
 __all__ = [
     "setup_logger",
