@@ -16,16 +16,10 @@ def load_secrets_from_env() -> Dict[str, Any]:
     """
     env_mapping = {
         "groq_api_key":          "GROQ_API_KEY",
-        "local_api_key":         "LOCAL_API_KEY",
-        "local_api_base":        "LOCAL_API_BASE",
+        "local_api_key":         "LOCAL_LLM_API_KEY",
+        "local_api_base":        "LOCAL_LLM_API_BASE_URL",
         "bedrock_credentials":   "BEDROCK_CREDENTIALS",
         "admin_sync_code":       "ADMIN_SYNC_CODE",
-        "aws_access_key_id":     "AWS_ACCESS_KEY_ID",
-        "aws_secret_access_key": "AWS_SECRET_ACCESS_KEY",
-        "aws_region":            "AWS_REGION",
-        "s3_bucket":             "S3_BUCKET",
-        "s3_key":                "S3_KEY",
-        "s3_endpoint_url":       "S3_ENDPOINT_URL",
     }
 
     secrets: Dict[str, Any] = {}

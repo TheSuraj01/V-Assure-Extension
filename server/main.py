@@ -185,8 +185,8 @@ async def lifespan(app: FastAPI):
 
     groq_key = config.get_secret("groq_api_key") or os.getenv("GROQ_API_KEY", "")
     bedrock_creds = config.get_secret("bedrock_credentials") or os.getenv("BEDROCK_CREDENTIALS", "")
-    local_key = config.get_secret("local_api_key") or os.getenv("LOCAL_API_KEY", "")
-    local_base = config.get_secret("local_api_base") or os.getenv("LOCAL_API_BASE", "")
+    local_key = config.get_secret("local_api_key") or os.getenv("LOCAL_LLM_API_KEY", "")
+    local_base = config.get_secret("local_api_base") or os.getenv("LOCAL_LLM_API_BASE_URL", "")
 
     providers_configured = []
     if groq_key:
@@ -223,21 +223,17 @@ async def lifespan(app: FastAPI):
             "Startup: patterns_cache.json empty or missing — fetching Excel from S3"
         )
 
-        s3_bucket = os.getenv("S3_BUCKET", "").strip()
-        s3_key = os.getenv("S3_KEY", "").strip()
+        s3_key = config.get("s3.key", "").strip()
         startup_bytes = None
 
-        if s3_bucket and s3_key:
+        if s3_key:
             try:
-                startup_bytes = S3Service.download_excel_as_bytes(
-                    bucket=s3_bucket,
-                    key=s3_key,
-                )
+                startup_bytes = S3Service.download_excel_as_bytes(key=s3_key)
                 logger.info("Startup: Excel downloaded from S3 into memory")
             except Exception:
                 logger.warning("Startup: S3 download failed — falling back to disk")
         else:
-            logger.info("Startup: S3_BUCKET or S3_KEY not set — skipping S3 download")
+            logger.info("Startup: s3.key not set in config.json — skipping S3 download")
 
         # Parse & register patterns (in-memory S3 bytes or disk/JSON fallback)
         init_dynamic_patterns(startup_bytes)
@@ -300,10 +296,10 @@ def resolve_api_config(req: GenerateRequest):
         api_key = api_key or config.get_secret("bedrock_credentials") or os.getenv("BEDROCK_CREDENTIALS", "")
     elif req.provider in ("local", "openai"):
         # "openai" is treated identically to "local" — the extension may send either.
-        # Always fall back to the server-side LOCAL_API_KEY / LOCAL_API_BASE so that
+        # Always fall back to the server-side LOCAL_LLM_API_KEY / LOCAL_LLM_API_BASE_URL so that
         # the request is routed to the custom endpoint, not to real OpenAI servers.
-        api_key = api_key or config.get_secret("local_api_key") or os.getenv("LOCAL_API_KEY", "")
-        api_base = api_base or config.get_secret("local_api_base") or os.getenv("LOCAL_API_BASE", "")
+        api_key = api_key or config.get_secret("local_api_key") or os.getenv("LOCAL_LLM_API_KEY", "")
+        api_base = api_base or config.get_secret("local_api_base") or os.getenv("LOCAL_LLM_API_BASE_URL", "")
 
     return api_key, api_base
 
@@ -419,24 +415,20 @@ async def admin_sync_templates(req: AdminSyncRequest):
         logger.warning("Admin sync attempt with invalid code")
         raise HTTPException(status_code=403, detail="Invalid admin code")
 
-    s3_bucket = os.getenv("S3_BUCKET", "").strip()
-    s3_key = os.getenv("S3_KEY", "").strip()
+    s3_key = config.get("s3.key", "").strip()
 
-    if not s3_bucket or not s3_key:
+    if not s3_key:
         raise HTTPException(
             status_code=503,
-            detail="S3_BUCKET or S3_KEY not configured on the server",
+            detail="s3.key not configured in config.json",
         )
 
     try:
         logger.info(
-            "Admin sync: downloading Excel from S3 | bucket=%s key=%s",
-            s3_bucket, s3_key,
+            "Admin sync: downloading Excel from S3 | key=%s",
+            s3_key,
         )
-        sheet_bytes = S3Service.download_excel_as_bytes(
-            bucket=s3_bucket,
-            key=s3_key,
-        )
+        sheet_bytes = S3Service.download_excel_as_bytes(key=s3_key)
     except Exception:
         logger.exception("Admin sync: S3 download failed")
         raise HTTPException(

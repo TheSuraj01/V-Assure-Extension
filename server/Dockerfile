@@ -33,4 +33,4 @@ EXPOSE 8000
 # Start application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", \
      "--workers", "2", "--timeout-keep-alive", "30", \
-     "--access-log", "-", "--log-level", "info"]
+     "--log-level", "info"]

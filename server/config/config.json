@@ -12,6 +12,9 @@
         "timeout": 120,
         "streaming_enabled": true
     },
+    "s3": {
+        "key": "dynamic_step_patterns.xlsx"
+    },
     "generation": {
         "use_multi_candidate": false,
         "num_candidates": 1,
@@ -263,10 +266,6 @@
         ],
         "task_instruction": "Generate dynamic-grade Veeva Vault automation steps following the exact dynamic workflow patterns and formatting rules.",
         "output_instruction": "Generate only the final automation step."
-    },
-    "s3": {
-        "key": "dynamic_step_patterns.xlsx",
-        "region": "us-east-1"
     },
     "logging": {
         "level": "INFO",

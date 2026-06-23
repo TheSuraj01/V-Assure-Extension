@@ -58,7 +58,6 @@ server/outputs/*.json
 logs/
 
 # ── Knowledge Base Data (loaded at runtime) ──────────────────
-server/data/*.json
 !server/data/.gitkeep
 
 # ── Pattern Cache ─────────────────────────────────────────────

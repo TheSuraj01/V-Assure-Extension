@@ -112,20 +112,22 @@ async def safe_acompletion(
     if provider and provider != "bedrock" and "/" not in model_name:
         kwargs["model"] = f"{provider}/{model_name}"
 
-    if (
-        model_name.startswith("bedrock/")
-        and api_key
-        and ":" in api_key
-    ):
-        parts = api_key.split(":")
-        kwargs["aws_access_key_id"] = parts[0].strip()
-        kwargs["aws_secret_access_key"] = parts[1].strip()
-        kwargs["aws_region_name"] = (
-            parts[2].strip()
-            if len(parts) >= 3
-            else os.getenv("AWS_REGION_NAME", "us-east-1")
-        )
-        kwargs["api_key"] = None
+    # NOTE: Bedrock AWS credentials disabled — not currently in use.
+    # Uncomment if you need to use AWS Bedrock as an LLM provider.
+    # if (
+    #     model_name.startswith("bedrock/")
+    #     and api_key
+    #     and ":" in api_key
+    # ):
+    #     parts = api_key.split(":")
+    #     kwargs["aws_access_key_id"] = parts[0].strip()
+    #     kwargs["aws_secret_access_key"] = parts[1].strip()
+    #     kwargs["aws_region_name"] = (
+    #         parts[2].strip()
+    #         if len(parts) >= 3
+    #         else os.getenv("AWS_REGION_NAME", "us-east-1")
+    #     )
+    #     kwargs["api_key"] = None
 
     generation_config = get_generation_config()
 

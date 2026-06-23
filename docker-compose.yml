@@ -1,34 +1,38 @@
-version: '3.8'
+version: '1.0'
 
 services:
   backend:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: vassure-backend
+      # Layer cache: deps rebuild only when requirements.txt changes
+      cache_from:
+        - vassure:latest
+    image: vassure:latest
+    container_name: vassure-dev          # dev only — prod uses blue/green via deploy.yml
     ports:
       - "8000:8000"
+    env_file:
+      - path: .env
+        required: false                             # single source of truth; mirrors what deploy.yml writes
     environment:
-      # Core application settings
-      - APP_ENV=production
-      - DEBUG=false
-      - LOG_LEVEL=INFO
+      # Overrides / dev-only defaults on top of .env
+      - APP_ENV=${APP_ENV:-development}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
-      
-      # Secrets
-      - GROQ_API_KEY=${GROQ_API_KEY:-}
-      
-      # S3 Template storage settings
-      - S3_BUCKET=${S3_BUCKET:-}
-      - S3_KEY=${S3_KEY:-}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL:-}
+
+      # LLM – Local (OpenAI-compatible)
+      - LOCAL_LLM_API_BASE_URL=${LOCAL_LLM_API_BASE_URL:-}
+      - LOCAL_LLM_API_KEY=${LOCAL_LLM_API_KEY:-}
+
+      # S3 Proxy API
+      - S3_API_BASE_URL=${S3_API_BASE_URL:-}
+
     volumes:
-      # Persistent storage for KB index data and session outputs
-      - ./server/data:/app/data
       - ./server/outputs:/app/outputs
+      - ./server/data:/app/data
+
     deploy:
       resources:
         limits:
@@ -37,9 +41,18 @@ services:
         reservations:
           cpus: '0.5'
           memory: 1G
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
     restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
