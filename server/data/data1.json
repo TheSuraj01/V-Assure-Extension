@@ -1,0 +1,577 @@
+[
+  {
+    "name": "user profile icon click",
+    "input": { "action": "click", "label": "User Profile Icon" },
+    "output": "Click on the User Profile Icon."
+  },
+  {
+    "name": "user profile button top right",
+    "input": { "action": "click", "label": "User Profile" },
+    "output": "Click User Profile Button in the top right corner."
+  },
+  {
+    "name": "log out click veeva",
+    "input": { "action": "click", "label": "Log out" },
+    "output": "Click Log out."
+  },
+  {
+    "name": "logout dropdown select veeva",
+    "input": { "action": "select", "label": "User Profile", "selectedText": "Logout" },
+    "output": "Select Logout from the dropdown."
+  },
+  {
+    "name": "switch user veeva",
+    "input": { "action": "click", "label": "Switch User" },
+    "output": "Click Switch User to change accounts."
+  },
+  {
+    "name": "username input veeva",
+    "input": { "action": "input", "label": "User Name", "value": "admin" },
+    "output": "Enter <<admin>> in User Name Input Field."
+  },
+  {
+    "name": "username input continue veeva",
+    "input": { "action": "input", "label": "User Name", "value": "user" },
+    "output": "Enter <<user>> in User Name Input Field and Click Continue button."
+  },
+  {
+    "name": "continue button veeva",
+    "input": { "action": "click", "label": "Continue" },
+    "output": "Click Continue button."
+  },
+  {
+    "name": "password input veeva",
+    "input": { "action": "input", "label": "Password", "value": "password" },
+    "output": "Enter <<password>> in Password Input Field."
+  },
+  {
+    "name": "password login veeva",
+    "input": { "action": "input", "label": "Password", "value": "password" },
+    "output": "Enter <<password>> in Password Input Field and click Log In button."
+  },
+  {
+    "name": "login button veeva",
+    "input": { "action": "click", "label": "Log In" },
+    "output": "Click Log In button."
+  },
+  {
+    "name": "select vault veeva",
+    "input": { "action": "click", "label": "Select a Vault" },
+    "output": "Click Select a Vault button."
+  },
+  {
+    "name": "vault dropdown veeva",
+    "input": { "action": "select", "label": "Vault", "selectedText": "vault_name" },
+    "output": "Select <<vault_name>> from the dropdown list."
+  },
+  {
+    "name": "search vaults input veeva",
+    "input": { "action": "input", "label": "Search Vaults", "value": "vault" },
+    "output": "Type <<vault>> in the Search Vaults Input Field."
+  },
+  {
+    "name": "verify user logged in veeva",
+    "input": { "action": "verify", "label": "user is logged in" },
+    "output": "Verify the <<user>> user is logged in successfully."
+  },
+  {
+    "name": "admin nav click veeva",
+    "input": { "action": "click", "label": "Admin" },
+    "output": "Click on the Admin tab in the navigation bar."
+  },
+  {
+    "name": "users groups veeva",
+    "input": { "action": "click", "label": "Users & Groups" },
+    "output": "Navigate to Admin > Users & Groups."
+  },
+  {
+    "name": "vault users veeva",
+    "input": { "action": "click", "label": "Vault Users" },
+    "output": "Navigate to Admin > Users & Groups > Vault Users."
+  },
+  {
+    "name": "domain users veeva",
+    "input": { "action": "click", "label": "Domain Users" },
+    "output": "Navigate to Admin > Users & Groups > Domain Users."
+  },
+  {
+    "name": "business admin veeva",
+    "input": { "action": "click", "label": "Business Admin" },
+    "output": "Click on Business Admin from the tab collection."
+  },
+  {
+    "name": "objects users veeva",
+    "input": { "action": "click", "label": "Users" },
+    "output": "Navigate to Business Admin > Objects > Users."
+  },
+  {
+    "name": "actions menu veeva",
+    "input": { "action": "click", "label": "Actions" },
+    "output": "Click on the Actions menu."
+  },
+  {
+    "name": "create cross domain user veeva",
+    "input": { "action": "select", "label": "Actions", "selectedText": "Create Cross Domain User" },
+    "output": "Click the Actions menu and select Create Cross Domain User."
+  },
+  {
+    "name": "create domain user veeva",
+    "input": { "action": "select", "label": "Actions", "selectedText": "Create Domain User" },
+    "output": "Click the Actions menu and select Create Domain User."
+  },
+  {
+    "name": "create button veeva",
+    "input": { "action": "click", "label": "Create" },
+    "output": "Click the Create button to create a new record."
+  },
+  {
+    "name": "create button global",
+    "input": { "action": "click", "label": "Create" },
+    "output": "Click the global Create button."
+  },
+  {
+    "name": "save button veeva",
+    "input": { "action": "click", "label": "Save" },
+    "output": "Click Save to save the record."
+  },
+  {
+    "name": "save button dialog veeva",
+    "input": { "action": "click", "label": "Save" },
+    "output": "Click Save in the dialog box."
+  },
+  {
+    "name": "cancel button veeva",
+    "input": { "action": "click", "label": "Cancel" },
+    "output": "Click Cancel to discard changes."
+  },
+  {
+    "name": "edit button veeva",
+    "input": { "action": "click", "label": "Edit" },
+    "output": "Click Edit to modify the record."
+  },
+  {
+    "name": "pencil icon veeva",
+    "input": { "action": "click", "label": "Pencil" },
+    "output": "Click the Pencil icon to edit."
+  },
+  {
+    "name": "delete button veeva",
+    "input": { "action": "click", "label": "Delete" },
+    "output": "Click Delete to remove the record."
+  },
+  {
+    "name": "search box veeva",
+    "input": { "action": "input", "label": "Search", "value": "query" },
+    "output": "Enter <<query>> in the Search box."
+  },
+  {
+    "name": "search columns veeva",
+    "input": { "action": "input", "label": "Search Columns", "value": "user" },
+    "output": "Enter <<user>> in the Search Columns field."
+  },
+  {
+    "name": "search button veeva",
+    "input": { "action": "click", "label": "Search" },
+    "output": "Click Search to find records."
+  },
+  {
+    "name": "filter dropdown veeva",
+    "input": { "action": "select", "label": "Filter", "selectedText": "All" },
+    "output": "Select All from the Filter dropdown."
+  },
+  {
+    "name": "status dropdown veeva",
+    "input": { "action": "select", "label": "Status", "selectedText": "Active" },
+    "output": "Select Active from the Status dropdown."
+  },
+  {
+    "name": "first name veeva",
+    "input": { "action": "input", "label": "First Name", "value": "first" },
+    "output": "Enter <<first>> in the First Name field."
+  },
+  {
+    "name": "last name veeva",
+    "input": { "action": "input", "label": "Last Name", "value": "last" },
+    "output": "Enter <<last>> in the Last Name field."
+  },
+  {
+    "name": "email veeva",
+    "input": { "action": "input", "label": "Email", "value": "email" },
+    "output": "Enter <<email>> in the Email field."
+  },
+  {
+    "name": "tab collections veeva",
+    "input": { "action": "click", "label": "Tab Collections" },
+    "output": "Click Tab Collections."
+  },
+  {
+    "name": "tab collections dropdown veeva",
+    "input": { "action": "select", "label": "Tab Collections", "selectedText": "Business Admin" },
+    "output": "Select Business Admin from Tab Collections."
+  },
+  {
+    "name": "clinical admin veeva",
+    "input": { "action": "select", "label": "Tab Collections", "selectedText": "Clinical Admin" },
+    "output": "Select Clinical Admin from Tab Collections."
+  },
+  {
+    "name": "quality admin veeva",
+    "input": { "action": "select", "label": "Tab Collections", "selectedText": "Quality Admin" },
+    "output": "Select Quality Admin from Tab Collections."
+  },
+  {
+    "name": "group assignment veeva",
+    "input": { "action": "click", "label": "Group Assignments" },
+    "output": "Click Group Assignments section."
+  },
+  {
+    "name": "lifecycle state veeva",
+    "input": { "action": "select", "label": "Lifecycle State", "selectedText": "Active" },
+    "output": "Select Active from the Lifecycle State dropdown."
+  },
+  {
+    "name": "security profile veeva",
+    "input": { "action": "select", "label": "Security Profile", "selectedText": "Standard User" },
+    "output": "Select <<securityProfile>> from Security Profile dropdown."
+  },
+  {
+    "name": "license type veeva",
+    "input": { "action": "select", "label": "License Type", "selectedText": "User" },
+    "output": "Select <<licenseType>> from the License Type dropdown."
+  },
+  {
+    "name": "layout profile veeva",
+    "input": { "action": "select", "label": "Layout Profile", "selectedText": "Standard" },
+    "output": "Select <<layoutProfile>> from Layout Profile dropdown."
+  },
+  {
+    "name": "preferred tab veeva",
+    "input": { "action": "select", "label": "Preferred Tab Collection", "selectedText": "Standard" },
+    "output": "Select <<tabCollection>> from Preferred Tab Collection dropdown."
+  },
+  {
+    "name": "workflow button veeva",
+    "input": { "action": "click", "label": "Workflow" },
+    "output": "Click the Workflow button."
+  },
+  {
+    "name": "workflow actions veeva",
+    "input": { "action": "click", "label": "Workflow Actions" },
+    "output": "Click the Workflow Actions button."
+  },
+  {
+    "name": "make active veeva",
+    "input": { "action": "select", "label": "Workflow", "selectedText": "Make Active" },
+    "output": "Select Make Active from the Workflow dropdown."
+  },
+  {
+    "name": "make inactive veeva",
+    "input": { "action": "select", "label": "Workflow", "selectedText": "Make Inactive" },
+    "output": "Select Make Inactive from the Workflow dropdown."
+  },
+  {
+    "name": "yes button veeva",
+    "input": { "action": "click", "label": "Yes" },
+    "output": "Click Yes to confirm."
+  },
+  {
+    "name": "back button veeva",
+    "input": { "action": "click", "label": "Back" },
+    "output": "Click Back to go to previous page."
+  },
+  {
+    "name": "next button veeva",
+    "input": { "action": "click", "label": "Next" },
+    "output": "Click Next to proceed."
+  },
+  {
+    "name": "close button veeva",
+    "input": { "action": "click", "label": "Close" },
+    "output": "Click Close to close the dialog."
+  },
+  {
+    "name": "library tab veeva",
+    "input": { "action": "click", "label": "Library" },
+    "output": "Click the Library tab."
+  },
+  {
+    "name": "documents tab veeva",
+    "input": { "action": "click", "label": "Documents" },
+    "output": "Click the Documents tab."
+  },
+  {
+    "name": "studies tab veeva",
+    "input": { "action": "click", "label": "Studies" },
+    "output": "Click the Studies tab."
+  },
+  {
+    "name": "products tab veeva",
+    "input": { "action": "click", "label": "Products" },
+    "output": "Click the Products tab."
+  },
+  {
+    "name": "objects tab veeva",
+    "input": { "action": "click", "label": "Objects" },
+    "output": "Click the Objects tab."
+  },
+  {
+    "name": "reports tab veeva",
+    "input": { "action": "click", "label": "Reports" },
+    "output": "Click the Reports tab."
+  },
+  {
+    "name": "upload document veeva",
+    "input": { "action": "select", "label": "Create", "selectedText": "Document" },
+    "output": "Click Create and select Document to upload."
+  },
+  {
+    "name": "select files to upload veeva",
+    "input": { "action": "click", "label": "Select files to upload" },
+    "output": "Click Select files to upload and choose files."
+  },
+  {
+    "name": "document type veeva",
+    "input": { "action": "select", "label": "Document Type", "selectedText": "Study Report" },
+    "output": "Select <<docType>> from Document Type dropdown."
+  },
+  {
+    "name": "study dropdown veeva",
+    "input": { "action": "select", "label": "Study", "selectedText": "Study" },
+    "output": "Select <<study>> from Study dropdown."
+  },
+  {
+    "name": "promote to approved veeva",
+    "input": { "action": "select", "label": "Workflow Actions", "selectedText": "Promote to Approved" },
+    "output": "Select Promote to Approved from Workflow Actions."
+  },
+  {
+    "name": "promote to final veeva",
+    "input": { "action": "select", "label": "Workflow Actions", "selectedText": "Promote to Final" },
+    "output": "Select Promote to Final from Workflow Actions."
+  },
+  {
+    "name": "retain button veeva",
+    "input": { "action": "click", "label": "Retain" },
+    "output": "Click Retain."
+  },
+  {
+    "name": "release button veeva",
+    "input": { "action": "click", "label": "Release" },
+    "output": "Click Release."
+  },
+  {
+    "name": "assign button veeva",
+    "input": { "action": "click", "label": "Assign" },
+    "output": "Click Assign."
+  },
+  {
+    "name": "unassign button veeva",
+    "input": { "action": "click", "label": "Unassign" },
+    "output": "Click Unassign."
+  },
+  {
+    "name": "add button veeva",
+    "input": { "action": "click", "label": "Add" },
+    "output": "Click Add to add an item."
+  },
+  {
+    "name": "remove button veeva",
+    "input": { "action": "click", "label": "Remove" },
+    "output": "Click Remove to delete."
+  },
+  {
+    "name": "view button veeva",
+    "input": { "action": "click", "label": "View" },
+    "output": "Click View to see details."
+  },
+  {
+    "name": "export button veeva",
+    "input": { "action": "click", "label": "Export" },
+    "output": "Click Export to download."
+  },
+  {
+    "name": "import button veeva",
+    "input": { "action": "click", "label": "Import" },
+    "output": "Click Import to upload data."
+  },
+  {
+    "name": "refresh button veeva",
+    "input": { "action": "click", "label": "Refresh" },
+    "output": "Click Refresh to reload data."
+  },
+  {
+    "name": "filter button veeva",
+    "input": { "action": "click", "label": "Filter" },
+    "output": "Click Filter to apply filters."
+  },
+  {
+    "name": "clear button veeva",
+    "input": { "action": "click", "label": "Clear" },
+    "output": "Click Clear to reset filters."
+  },
+  {
+    "name": "apply button veeva",
+    "input": { "action": "click", "label": "Apply" },
+    "output": "Click Apply to apply changes."
+  },
+  {
+    "name": "reset button veeva",
+    "input": { "action": "click", "label": "Reset" },
+    "output": "Click Reset to reset values."
+  },
+  {
+    "name": "download button veeva",
+    "input": { "action": "click", "label": "Download" },
+    "output": "Click Download."
+  },
+  {
+    "name": "send button veeva",
+    "input": { "action": "click", "label": "Send" },
+    "output": "Click Send to send."
+  },
+  {
+    "name": "share button veeva",
+    "input": { "action": "click", "label": "Share" },
+    "output": "Click Share."
+  },
+  {
+    "name": "create from template veeva",
+    "input": { "action": "select", "label": "Create", "selectedText": "Document from Template" },
+    "output": "Click Create and select Document from Template."
+  },
+  {
+    "name": "create binder veeva",
+    "input": { "action": "select", "label": "Create", "selectedText": "Binder" },
+    "output": "Click Create and select Binder."
+  },
+  {
+    "name": "create placeholder veeva",
+    "input": { "action": "select", "label": "Create", "selectedText": "Placeholder" },
+    "output": "Click Create and select Placeholder."
+  },
+  {
+    "name": "checkbox enable veeva",
+    "input": { "action": "check", "label": "Enable" },
+    "output": "Check the Enable checkbox."
+  },
+  {
+    "name": "radio yes veeva",
+    "input": { "action": "select", "label": "Option", "selectedText": "Yes" },
+    "output": "Select Yes."
+  },
+  {
+    "name": "inline edit veeva",
+    "input": { "action": "click", "label": "Field Value" },
+    "output": "Double-click the field to edit inline."
+  },
+  {
+    "name": "delegated access veeva",
+    "input": { "action": "click", "label": "Delegated Access" },
+    "output": "Click Delegated Access."
+  },
+  {
+    "name": "veeva support veeva",
+    "input": { "action": "click", "label": "Veeva Support" },
+    "output": "Click Veeva Support."
+  },
+  {
+    "name": "related documents veeva",
+    "input": { "action": "click", "label": "Related Documents" },
+    "output": "Click Related Documents section."
+  },
+  {
+    "name": "sharing settings veeva",
+    "input": { "action": "click", "label": "Sharing Settings" },
+    "output": "Click Sharing Settings."
+  },
+  {
+    "name": "audit trail veeva",
+    "input": { "action": "click", "label": "Audit Trail" },
+    "output": "Click Audit Trail."
+  },
+  {
+    "name": "history section veeva",
+    "input": { "action": "click", "label": "History" },
+    "output": "Click History section."
+  },
+  {
+    "name": "notes section veeva",
+    "input": { "action": "click", "label": "Notes" },
+    "output": "Click Notes section."
+  },
+  {
+    "name": "attachments section veeva",
+    "input": { "action": "click", "label": "Attachments" },
+    "output": "Click Attachments section."
+  },
+  {
+    "name": "add note veeva",
+    "input": { "action": "click", "label": "Add Note" },
+    "output": "Click Add Note."
+  },
+  {
+    "name": "add attachment veeva",
+    "input": { "action": "click", "label": "Add Attachment" },
+    "output": "Click Add Attachment."
+  },
+  {
+    "name": "jumplinks veeva",
+    "input": { "action": "click", "label": "Section Link" },
+    "output": "Click jumplink to navigate to section."
+  },
+  {
+    "name": "navigation panel veeva",
+    "input": { "action": "click", "label": "Navigation Panel" },
+    "output": "Click link in navigation panel."
+  },
+  {
+    "name": "details section veeva",
+    "input": { "action": "click", "label": "Details" },
+    "output": "Click Details section."
+  },
+  {
+    "name": "summary section veeva",
+    "input": { "action": "click", "label": "Summary" },
+    "output": "Click Summary section."
+  },
+  {
+    "name": "fields section veeva",
+    "input": { "action": "click", "label": "Fields" },
+    "output": "Click Fields section."
+  },
+  {
+    "name": "metadata section veeva",
+    "input": { "action": "click", "label": "Metadata" },
+    "output": "Click Metadata section."
+  },
+  {
+    "name": "verify active status",
+    "input": { "action": "verify", "label": "record is in the Active state" },
+    "output": "Verify the record is in the Active state."
+  },
+  {
+    "name": "verify inactive status",
+    "input": { "action": "verify", "label": "record is in the Inactive state" },
+    "output": "Verify the record is in the Inactive state."
+  },
+  {
+    "name": "verify document approved",
+    "input": { "action": "verify", "label": "Document is in the Approved state" },
+    "output": "Verify the Document is in the Approved state."
+  },
+  {
+    "name": "verify users page displayed",
+    "input": { "action": "verify", "label": "Users page is displayed" },
+    "output": "Verify that the Users page is displayed."
+  },
+  {
+    "name": "verify checkbox checked",
+    "input": { "action": "verify", "label": "checkbox is checked" },
+    "output": "Verify the checkbox is checked."
+  },
+  {
+    "name": "navigate to url veeva",
+    "input": { "action": "navigation", "label": "vault_url" },
+    "output": "Navigate to the Vault URL."
+  }
+]

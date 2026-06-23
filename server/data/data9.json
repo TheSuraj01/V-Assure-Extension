@@ -1,0 +1,152 @@
+[
+  {
+    "name": "navbar_library_veeva",
+    "input": { "action": "click", "label": "Library", "context": "navbar" },
+    "output": "Click on Library from navbar."
+  },
+  {
+    "name": "navbar_documents_veeva",
+    "input": { "action": "click", "label": "Documents", "context": "navbar" },
+    "output": "Click on Documents from navbar."
+  },
+  {
+    "name": "navbar_studies_veeva",
+    "input": { "action": "click", "label": "Studies", "context": "navbar" },
+    "output": "Click on Studies from navbar."
+  },
+  {
+    "name": "navbar_products_veeva",
+    "input": { "action": "click", "label": "Products", "context": "navbar" },
+    "output": "Click on Products from navbar."
+  },
+  {
+    "name": "navbar_objects_veeva",
+    "input": { "action": "click", "label": "Objects", "context": "navbar" },
+    "output": "Click on Objects from navbar."
+  },
+  {
+    "name": "navbar_reports_veeva",
+    "input": { "action": "click", "label": "Reports", "context": "navbar" },
+    "output": "Click on Reports from navbar."
+  },
+  {
+    "name": "navbar_admin_veeva",
+    "input": { "action": "click", "label": "Admin", "context": "navbar" },
+    "output": "Click on Admin from navbar."
+  },
+  {
+    "name": "navbar_users_groups_veeva",
+    "input": { "action": "click", "label": "Users & Groups", "context": "navbar" },
+    "output": "Click on Users & Groups from navbar."
+  },
+  {
+    "name": "navbar_home_veeva",
+    "input": { "action": "click", "label": "Home", "context": "navbar" },
+    "output": "Click on Home from navbar."
+  },
+  {
+    "name": "navbar_dashboard_veeva",
+    "input": { "action": "click", "label": "Dashboard", "context": "navbar" },
+    "output": "Click on Dashboard from navbar."
+  },
+  {
+    "name": "navbar_inbox_veeva",
+    "input": { "action": "click", "label": "Inbox", "context": "navbar" },
+    "output": "Click on Inbox from navbar."
+  },
+  {
+    "name": "navbar_tasks_veeva",
+    "input": { "action": "click", "label": "Tasks", "context": "navbar" },
+    "output": "Click on Tasks from navbar."
+  },
+  {
+    "name": "navbar_calendar_veeva",
+    "input": { "action": "click", "label": "Calendar", "context": "navbar" },
+    "output": "Click on Calendar from navbar."
+  },
+  {
+    "name": "navbar_workflows_veeva",
+    "input": { "action": "click", "label": "Workflows", "context": "navbar" },
+    "output": "Click on Workflows from navbar."
+  },
+  {
+    "name": "navbar_audit_trail_veeva",
+    "input": { "action": "click", "label": "Audit Trail", "context": "navbar" },
+    "output": "Click on Audit Trail from navbar."
+  },
+  {
+    "name": "navbar_configuration_veeva",
+    "input": { "action": "click", "label": "Configuration", "context": "navbar" },
+    "output": "Click on Configuration from navbar."
+  },
+  {
+    "name": "navbar_settings_veeva",
+    "input": { "action": "click", "label": "Settings", "context": "navbar" },
+    "output": "Click on Settings from navbar."
+  },
+  {
+    "name": "navbar_security_veeva",
+    "input": { "action": "click", "label": "Security", "context": "navbar" },
+    "output": "Click on Security from navbar."
+  },
+  {
+    "name": "navbar_groups_veeva",
+    "input": { "action": "click", "label": "Groups", "context": "navbar" },
+    "output": "Click on Groups from navbar."
+  },
+  {
+    "name": "navbar_users_veeva",
+    "input": { "action": "click", "label": "Users", "context": "navbar" },
+    "output": "Click on Users from navbar."
+  },
+  {
+    "name": "navbar_roles_veeva",
+    "input": { "action": "click", "label": "Roles", "context": "navbar" },
+    "output": "Click on Roles from navbar."
+  },
+  {
+    "name": "navbar_picklists_veeva",
+    "input": { "action": "click", "label": "Picklists", "context": "navbar" },
+    "output": "Click on Picklists from navbar."
+  },
+  {
+    "name": "navbar_templates_veeva",
+    "input": { "action": "click", "label": "Templates", "context": "navbar" },
+    "output": "Click on Templates from navbar."
+  },
+  {
+    "name": "navbar_lifecycles_veeva",
+    "input": { "action": "click", "label": "Lifecycles", "context": "navbar" },
+    "output": "Click on Lifecycles from navbar."
+  },
+  {
+    "name": "navbar_workflows_admin_veeva",
+    "input": { "action": "click", "label": "Workflow Admin", "context": "navbar" },
+    "output": "Click on Workflow Admin from navbar."
+  },
+  {
+    "name": "navbar_integrations_veeva",
+    "input": { "action": "click", "label": "Integrations", "context": "navbar" },
+    "output": "Click on Integrations from navbar."
+  },
+  {
+    "name": "navbar_api_usage_veeva",
+    "input": { "action": "click", "label": "API Usage", "context": "navbar" },
+    "output": "Click on API Usage from navbar."
+  },
+  {
+    "name": "navbar_event_audit_veeva",
+    "input": { "action": "click", "label": "Event Audit", "context": "navbar" },
+    "output": "Click on Event Audit from navbar."
+  },
+  {
+    "name": "navbar_logins_veeva",
+    "input": { "action": "click", "label": "Logins", "context": "navbar" },
+    "output": "Click on Logins from navbar."
+  },
+  {
+    "name": "navbar_activity_log_veeva",
+    "input": { "action": "click", "label": "Activity Log", "context": "navbar" },
+    "output": "Click on Activity Log from navbar."
+  }
+]

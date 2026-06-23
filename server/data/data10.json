@@ -1,0 +1,152 @@
+[
+  {
+    "name": "tabmenu_admin_veeva",
+    "input": { "action": "click", "label": "Admin", "context": "tab_collection_menu" },
+    "output": "Click on Admin from tab collection menu."
+  },
+  {
+    "name": "tabmenu_library_veeva",
+    "input": { "action": "click", "label": "Library", "context": "tab_collection_menu" },
+    "output": "Click on Library from tab collection menu."
+  },
+  {
+    "name": "tabmenu_documents_veeva",
+    "input": { "action": "click", "label": "Documents", "context": "tab_collection_menu" },
+    "output": "Click on Documents from tab collection menu."
+  },
+  {
+    "name": "tabmenu_studies_veeva",
+    "input": { "action": "click", "label": "Studies", "context": "tab_collection_menu" },
+    "output": "Click on Studies from tab collection menu."
+  },
+  {
+    "name": "tabmenu_products_veeva",
+    "input": { "action": "click", "label": "Products", "context": "tab_collection_menu" },
+    "output": "Click on Products from tab collection menu."
+  },
+  {
+    "name": "tabmenu_objects_veeva",
+    "input": { "action": "click", "label": "Objects", "context": "tab_collection_menu" },
+    "output": "Click on Objects from tab collection menu."
+  },
+  {
+    "name": "tabmenu_reports_veeva",
+    "input": { "action": "click", "label": "Reports", "context": "tab_collection_menu" },
+    "output": "Click on Reports from tab collection menu."
+  },
+  {
+    "name": "tabmenu_settings_veeva",
+    "input": { "action": "click", "label": "Settings", "context": "tab_collection_menu" },
+    "output": "Click on Settings from tab collection menu."
+  },
+  {
+    "name": "tabmenu_users_veeva",
+    "input": { "action": "click", "label": "Users", "context": "tab_collection_menu" },
+    "output": "Click on Users from tab collection menu."
+  },
+  {
+    "name": "tabmenu_users_groups_veeva",
+    "input": { "action": "click", "label": "Users & Groups", "context": "tab_collection_menu" },
+    "output": "Click on Users & Groups from tab collection menu."
+  },
+  {
+    "name": "tabmenu_groups_veeva",
+    "input": { "action": "click", "label": "Groups", "context": "tab_collection_menu" },
+    "output": "Click on Groups from tab collection menu."
+  },
+  {
+    "name": "tabmenu_roles_veeva",
+    "input": { "action": "click", "label": "Roles", "context": "tab_collection_menu" },
+    "output": "Click on Roles from tab collection menu."
+  },
+  {
+    "name": "tabmenu_security_veeva",
+    "input": { "action": "click", "label": "Security", "context": "tab_collection_menu" },
+    "output": "Click on Security from tab collection menu."
+  },
+  {
+    "name": "tabmenu_configuration_veeva",
+    "input": { "action": "click", "label": "Configuration", "context": "tab_collection_menu" },
+    "output": "Click on Configuration from tab collection menu."
+  },
+  {
+    "name": "tabmenu_workflows_veeva",
+    "input": { "action": "click", "label": "Workflows", "context": "tab_collection_menu" },
+    "output": "Click on Workflows from tab collection menu."
+  },
+  {
+    "name": "tabmenu_lifecycles_veeva",
+    "input": { "action": "click", "label": "Lifecycles", "context": "tab_collection_menu" },
+    "output": "Click on Lifecycles from tab collection menu."
+  },
+  {
+    "name": "tabmenu_picklists_veeva",
+    "input": { "action": "click", "label": "Picklists", "context": "tab_collection_menu" },
+    "output": "Click on Picklists from tab collection menu."
+  },
+  {
+    "name": "tabmenu_templates_veeva",
+    "input": { "action": "click", "label": "Templates", "context": "tab_collection_menu" },
+    "output": "Click on Templates from tab collection menu."
+  },
+  {
+    "name": "tabmenu_audit_trail_veeva",
+    "input": { "action": "click", "label": "Audit Trail", "context": "tab_collection_menu" },
+    "output": "Click on Audit Trail from tab collection menu."
+  },
+  {
+    "name": "tabmenu_integrations_veeva",
+    "input": { "action": "click", "label": "Integrations", "context": "tab_collection_menu" },
+    "output": "Click on Integrations from tab collection menu."
+  },
+  {
+    "name": "tabmenu_inbox_veeva",
+    "input": { "action": "click", "label": "Inbox", "context": "tab_collection_menu" },
+    "output": "Click on Inbox from tab collection menu."
+  },
+  {
+    "name": "tabmenu_tasks_veeva",
+    "input": { "action": "click", "label": "Tasks", "context": "tab_collection_menu" },
+    "output": "Click on Tasks from tab collection menu."
+  },
+  {
+    "name": "tabmenu_dashboard_veeva",
+    "input": { "action": "click", "label": "Dashboard", "context": "tab_collection_menu" },
+    "output": "Click on Dashboard from tab collection menu."
+  },
+  {
+    "name": "tabmenu_home_veeva",
+    "input": { "action": "click", "label": "Home", "context": "tab_collection_menu" },
+    "output": "Click on Home from tab collection menu."
+  },
+  {
+    "name": "tabmenu_business_admin_veeva",
+    "input": { "action": "click", "label": "Business Admin", "context": "tab_collection_menu" },
+    "output": "Click on Business Admin from tab collection menu."
+  },
+  {
+    "name": "tabmenu_clinical_admin_veeva",
+    "input": { "action": "click", "label": "Clinical Admin", "context": "tab_collection_menu" },
+    "output": "Click on Clinical Admin from tab collection menu."
+  },
+  {
+    "name": "tabmenu_quality_admin_veeva",
+    "input": { "action": "click", "label": "Quality Admin", "context": "tab_collection_menu" },
+    "output": "Click on Quality Admin from tab collection menu."
+  },
+  {
+    "name": "tabmenu_regulatory_veeva",
+    "input": { "action": "click", "label": "Regulatory", "context": "tab_collection_menu" },
+    "output": "Click on Regulatory from tab collection menu."
+  },
+  {
+    "name": "tabmenu_commercial_veeva",
+    "input": { "action": "click", "label": "Commercial", "context": "tab_collection_menu" },
+    "output": "Click on Commercial from tab collection menu."
+  },
+  {
+    "name": "tabmenu_safety_veeva",
+    "input": { "action": "click", "label": "Safety", "context": "tab_collection_menu" },
+    "output": "Click on Safety from tab collection menu."
+  }
+]
